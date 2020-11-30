@@ -17,6 +17,10 @@ static uint32_t get_abi_u32_be(void * in, size_t loc) {
   return inPtr[l-1] | inPtr[l-2] << 8 | inPtr[l-3] << 16 | inPtr[l-4] << 24;
 }
 
+static bool is_fixed_bytes_type(ABI_t t) {
+  return t.type >= ABI_BYTES1 && t.type <= ABI_BYTES32;
+}
+
 static bool is_valid_abi_type(ABI_t t) {
   return t.type < ABI_MAX && t.type > ABI_NONE;
 }
@@ -49,7 +53,7 @@ static bool is_array_abi_type(ABI_t t) {
 static size_t elem_sz(ABI_t t) {
   if (true == is_dynamic_abi_type(t))
     return 0;
-  if (t.type >= ABI_BYTES1 && t.type <= ABI_BYTES32)
+  if (true == is_fixed_bytes_type(t))
     return 1 + (t.type - ABI_BYTES1);
   switch (t.type) {
     // Non-numerical
@@ -89,12 +93,16 @@ static size_t elem_sz(ABI_t t) {
 // but may contain less data than 32 bytes.
 static size_t decode_elem_param(void * out, size_t outSz, ABI_t type, void * in, size_t off) {
   // Ensure there is space for this data in `out` and that this is an elementary type
-  if ((off + ABI_WORD_SZ > outSz) || (false == is_valid_abi_type(type)) ||
-      (true == is_dynamic_abi_type(type) || true == type.isArray))
+  if ((ABI_WORD_SZ > outSz) || (false == is_valid_abi_type(type)) || (true == is_dynamic_abi_type(type)))
     return 0;
   size_t nBytes = elem_sz(type);
-  // Copy the final `nBytes` out of the 32 byte word.
-  memcpy((in + off + (ABI_WORD_SZ - nBytes)), out, nBytes);
+  uint8_t * inPtr = in;
+  // Non-numerical (and non-bool) types have data written to the beginning of the word
+  if (true == is_fixed_bytes_type(type) || type.type == ABI_ADDRESS || type.type == ABI_FUNCTION)
+    memcpy(out, inPtr + off, nBytes);
+  // Numerical types have data written at the end of the word 
+  else
+    memcpy(out, inPtr + off + (ABI_WORD_SZ - nBytes), nBytes);
   return nBytes;
 }
 
@@ -103,27 +111,34 @@ static size_t decode_elem_param(void * out, size_t outSz, ABI_t type, void * in,
 static size_t decode_non_elem_param(void * out, size_t outSz, ABI_t type, void * in, size_t off) {
   if (false == is_valid_abi_type(type))
     return 0;
+  uint8_t * inPtr = in;
+  uint8_t * outPtr = out;
   if (is_array_abi_type(type)) {
     // For fixed size arrays, the number of elements is defined in the ABI itself.
     // For variable size arrays, the number of elements is encoded in the offset word.
-    size_t numElem = type.arraySz > 0 ? type.arraySz : get_abi_u32_be(in, off);
+    size_t numElem = type.arraySz;
+    if (numElem == 0) {
+      numElem = get_abi_u32_be(in, off);
+      off += ABI_WORD_SZ; // Account for this word, which tells us the number of ensuing elements.
+    }
     // Get the number of bytes in each element
     size_t elemSz = elem_sz(type);
     // Sanity check on size
     if (outSz < (numElem * elemSz))
       return 0;
     // Copy the data
-    for (size_t i = 0; i < numElem; i++)
-      memcpy( (out + (elemSz * i)), 
-              (in + off + (ABI_WORD_SZ * i) + (ABI_WORD_SZ - elemSz)), // Last `elemSz` bytes of the i-th word
-              elemSz);
+    for (size_t i = 0; i < numElem; i++) {
+      decode_elem_param((outPtr + (i * elemSz)), outSz, type, in, off + (ABI_WORD_SZ * i));
+      outSz -= ABI_WORD_SZ;
+    }
     return elemSz * numElem;
   }
   // For dynamic types, the param offset word contains the number of *bytes*, and we can copy them directly.
   size_t arraySzBytes = get_abi_u32_be(in, off);
+  off += ABI_WORD_SZ; // Account for this word, which tells us the size of the ensuing data.
   if (outSz < arraySzBytes)
     return 0;
-  memcpy(out, in+off, arraySzBytes);
+  memcpy(out, inPtr + off, arraySzBytes);
   return arraySzBytes;
 }
 
