@@ -6,8 +6,7 @@
  * (https://docs.soliditylang.org/en/develop/abi-spec.html)
  * as it pertains to contract method calls. We support encoding and decoding
  * of Ethereum data types.
-
-/**
+ *
  * MIT License
  *
  * Copyright (c) 2020 Aurash Kamalipour <afkamalipour@gmail.com>
@@ -44,6 +43,9 @@ typedef enum {
   ABI_NONE = 0,
 
   // Supported fixed types
+  ABI_ADDRESS,
+  ABI_BOOL,
+  ABI_FUNCTION, // 20 byte address + 4 byte function selector
   ABI_UINT8,
   ABI_UINT16,
   ABI_UINT24,
@@ -58,10 +60,8 @@ typedef enum {
   ABI_INT64,
   ABI_INT128,
   ABI_INT256,
-  ABI_ADDRESS,
   ABI_UINT, // alias for UINT256
   ABI_INT,  // alian for INT256
-  ABI_BOOL,
   ABI_BYTES1,
   ABI_BYTES2,
   ABI_BYTES3,
@@ -94,7 +94,6 @@ typedef enum {
   ABI_BYTES30,
   ABI_BYTES31,
   ABI_BYTES32,
-  ABI_FUNCTION, // Same as BYTES32
 
   // Supported dynamic types
   ABI_BYTES,
@@ -114,6 +113,9 @@ typedef struct {
 } ABI_t;
 
 // Decode and return a param's data in `out` given a set of ABI types and an `in` buffer.
+// Note that padding is stripped from elementary types, which are encoded in 32-byte words regardless
+// of the underlying data size. For example, a single ABI_BOOL would be the last byte of a
+// 32 byte word. Dynamic types are returned in full, as there is no padding.
 // @param `out`     - output buffer to be written
 // @param `outSz`   - size of output buffer to be written
 // @param `types`   - array of ABI type definitions

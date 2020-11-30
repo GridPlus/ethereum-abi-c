@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #define ABI_WORD_SZ 32
 
 //===============================================
@@ -11,10 +12,9 @@
 // Get the u32 that is represented in big endian in a 32 byte word (i.e. last 4 bytes).
 // Returns a little endian numerical representation of bytes loc+29:loc+32.
 static uint32_t get_abi_u32_be(void * in, size_t loc) {
-  uint32_t n = 0;
-  for (size_t i = 0; i < sizeof(uint32_t); i++)
-    memcpy(&n+i, (in + loc + (31-i)), 1);
-  return n;
+  uint8_t * inPtr = in;
+  size_t l = loc + 32;
+  return inPtr[l-1] | inPtr[l-2] << 8 | inPtr[l-3] << 16 | inPtr[l-4] << 24;
 }
 
 static bool is_valid_abi_type(ABI_t t) {
@@ -45,41 +45,87 @@ static bool is_array_abi_type(ABI_t t) {
           (true == t.isArray)));
 }
 
-static size_t decode_non_elem_param(void * out, size_t outSz, ABI_t type, void * in, size_t off) {
-  if (false == is_valid_abi_type(type))
+// Get the number of bytes describing an elementary data type
+static size_t elem_sz(ABI_t t) {
+  if (true == is_dynamic_abi_type(t))
     return 0;
-  size_t arraySzBytes = 0;
-  if (is_array_abi_type(type)) {
-    // Start by assuming we have a fixed size array, which has the number of elements defined at
-    // the param offset word (i.e. the *data* offset starts with the data itself, rather than a size).
-    arraySzBytes = type.arraySz * ABI_WORD_SZ;
-    if (type.arraySz == 0) {
-      // For variable sized arrays, the first word at the data offset location contains the number of
-      // array elements; again, this size is described in the *param* offset location for fixed size arrays.
-      arraySzBytes = get_abi_u32_be(in, off) * ABI_WORD_SZ;
-      off += ABI_WORD_SZ;
-    }
-  } else {
-    // For dynamic types, the param offset word contains the number of *bytes*
-    arraySzBytes = get_abi_u32_be(in, off);
+  if (t.type >= ABI_BYTES1 && t.type <= ABI_BYTES32)
+    return 1 + (t.type - ABI_BYTES1);
+  switch (t.type) {
+    // Non-numerical
+    case ABI_ADDRESS:
+      return 20;
+    case ABI_BOOL:
+      return 1;
+    case ABI_FUNCTION:
+      return 24;
+    // Numerical
+    case ABI_UINT8:
+    case ABI_INT8:
+      return 1;
+    case ABI_UINT16:
+    case ABI_INT16:
+      return 2;
+    case ABI_UINT32:
+    case ABI_INT32:
+      return 4;
+    case ABI_UINT64:
+    case ABI_INT64:
+      return 8;
+    case ABI_UINT128:
+    case ABI_INT128:
+      return 16;
+    case ABI_UINT256:
+    case ABI_INT256:
+    case ABI_UINT:
+    case ABI_INT:
+      return 32;
+    default:
+      return 0;
   }
-  // Ensure we can fit this param data into the `out` buffer. If we can, copy and return.
-  if (outSz < arraySzBytes)
-    return 0;
-  memcpy(out, in+off, arraySzBytes);
-  return arraySzBytes;
 }
 
-// Decode a parameter of elementary type, which are all 32 bytes at the offset (`off`)
+// Decode a parameter of elementary type. Each elementary type is encoded in a single 32 byte word,
+// but may contain less data than 32 bytes.
 static size_t decode_elem_param(void * out, size_t outSz, ABI_t type, void * in, size_t off) {
   // Ensure there is space for this data in `out` and that this is an elementary type
   if ((off + ABI_WORD_SZ > outSz) || (false == is_valid_abi_type(type)) ||
       (true == is_dynamic_abi_type(type) || true == type.isArray))
     return 0;
-  memcpy(in+off, out, ABI_WORD_SZ);
-  return ABI_WORD_SZ;
+  size_t nBytes = elem_sz(type);
+  // Copy the final `nBytes` out of the 32 byte word.
+  memcpy((in + off + (ABI_WORD_SZ - nBytes)), out, nBytes);
+  return nBytes;
 }
 
+// Decode a "non-elementary" param. This includes dynamic types as well as both fixed and vairable
+// sized arrays containing a set of params of a single elementary type.
+static size_t decode_non_elem_param(void * out, size_t outSz, ABI_t type, void * in, size_t off) {
+  if (false == is_valid_abi_type(type))
+    return 0;
+  if (is_array_abi_type(type)) {
+    // For fixed size arrays, the number of elements is defined in the ABI itself.
+    // For variable size arrays, the number of elements is encoded in the offset word.
+    size_t numElem = type.arraySz > 0 ? type.arraySz : get_abi_u32_be(in, off);
+    // Get the number of bytes in each element
+    size_t elemSz = elem_sz(type);
+    // Sanity check on size
+    if (outSz < (numElem * elemSz))
+      return 0;
+    // Copy the data
+    for (size_t i = 0; i < numElem; i++)
+      memcpy( (out + (elemSz * i)), 
+              (in + off + (ABI_WORD_SZ * i) + (ABI_WORD_SZ - elemSz)), // Last `elemSz` bytes of the i-th word
+              elemSz);
+    return elemSz * numElem;
+  }
+  // For dynamic types, the param offset word contains the number of *bytes*, and we can copy them directly.
+  size_t arraySzBytes = get_abi_u32_be(in, off);
+  if (outSz < arraySzBytes)
+    return 0;
+  memcpy(out, in+off, arraySzBytes);
+  return arraySzBytes;
+}
 
 //===============================================
 // API
