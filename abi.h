@@ -36,6 +36,9 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+#define ABI_WORD_SZ 32
+#define ABI_ARRAY_DEPTH_MAX 5
+
 // Enumeration of ABI types.
 // * ABI_BYTES and ABI_STRING are both dynamic types and can be any size
 // * Everything else is an elementary type and must be packed into a 32 byte word
@@ -110,7 +113,22 @@ typedef struct {
   ABIAtomic_t type;   // The underlying, atomic type
   bool isArray;       // Whether this is an array of the atomic type
   size_t arraySz;     // Size of the array (non-zero implies fixed size array)
+  size_t extraDepth;  // Number of extra dimensions in the array, if applicable (2D array -> extraDepth=1)
 } ABI_t;
+
+typedef struct {
+  size_t typeIdx;                     // The index of the type param in the function definition
+  size_t subIdx[ABI_ARRAY_DEPTH_MAX]; // The set of indices describing the multi-dimensional array element
+                                      // to fetch, e.g. array[0][1][6] would be [ 0, 1, 6, 0, 0 ]
+                                      // Note that this util will not fetch any indices beyond `1+extraDepth`
+                                      // as described in the ABI_t type, so if you had a 2D array and passed
+                                      // indices [0,1,2,3,4], it would only lookup array[0][1].
+                                      // Similarly, a 3D array with indices [1, 0, 0, 0, 0] would fetch array[1][0][0],
+                                      // meaning data can only be fetched from the highest dimension of the array.
+} ABISelector_t;
+
+// Return true if the ABI_t is readable and valid according to the parsing rules of ABI and this module.
+bool is_valid_abi_type(ABI_t t);
 
 // Decode and return a param's data in `out` given a set of ABI types and an `in` buffer.
 // Note that padding is stripped from elementary types, which are encoded in 32-byte words regardless
@@ -119,9 +137,8 @@ typedef struct {
 // @param `out`     - output buffer to be written
 // @param `outSz`   - size of output buffer to be written
 // @param `types`   - array of ABI type definitions
-// @param `typeIdx` - index of the ABI type definition in `types` whos data we want to extract
-// @param `in`      - raw input buffer containing the entire ABI-encoded message
+// @param `info`    - information about the data to be selected
 // @return          - number of bytes written to `out`; 0 on error.
-size_t abi_decode_param(void * out, size_t outSz, ABI_t * types, size_t typeIdx, void * in);
+size_t abi_decode_param(void * out, size_t outSz, ABI_t * types, ABISelector_t info, void * in);
 
 #endif
