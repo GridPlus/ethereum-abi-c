@@ -98,6 +98,8 @@ static size_t decode_elem_param(void * out, size_t outSz, ABI_t type, void * in,
     return 0;
   size_t nBytes = elem_sz(type);
   uint8_t * inPtr = in;
+  if (outSz < nBytes)
+    return 0;
   // Non-numerical (and non-bool) types have data written to the beginning of the word
   if (true == is_fixed_bytes_type(type) || type.type == ABI_ADDRESS || type.type == ABI_FUNCTION)
     memcpy(out, inPtr + off, nBytes);
@@ -113,7 +115,6 @@ static size_t decode_non_elem_param(void * out, size_t outSz, ABI_t type, void *
   if (false == is_valid_abi_type(type))
     return 0;
   uint8_t * inPtr = in;
-  uint8_t * outPtr = out;
   size_t numElem = 0;
   if (is_elementary_type_array(type)) {
     // For fixed size arrays, the number of elements is defined in the ABI itself.
@@ -123,40 +124,28 @@ static size_t decode_non_elem_param(void * out, size_t outSz, ABI_t type, void *
       numElem = get_abi_u32_be(in, off);
       off += ABI_WORD_SZ; // Account for this word, which tells us the number of ensuing elements.
     }
-    // Get the number of bytes in each element
-    size_t elemSz = elem_sz(type);
-    // Sanity check on size
-    if (outSz < (numElem * elemSz))
-      return 0;
-    if (info.subIdx[d] >= numElem)
-        return 0;
-    // Copy the data. If this is a nested array we need to recurse. Otherwise we can write the param directly.
+    // Copy the data. 
     if (type.extraDepth > d) {
-      off += get_abi_u32_be(in, (off + (ABI_WORD_SZ * info.subIdx[d])));
+      // Sanity check on size
+      if (info.subIdx[d] >= numElem)
+        return 0;
+      // If we need to go to a higher dimension, get the offset of the nested array we want to look up
+      // and bump the dimension before recursing.
+      for (size_t i = 0; i < info.subIdx[d]; i++)
+        off += (ABI_WORD_SZ * (1 + get_abi_u32_be(in, off)));
       d++;
       return decode_non_elem_param(out, outSz, type, in, off, info, d);
-    } else if (type.extraDepth == d && d > 0) {
-      // Once we are on the highest dimension, skip the entries until we get the index we want
-      // First undo the offset bump that we had before so we can fetch the array size of this element
-      off -= ABI_WORD_SZ;
-      for (size_t i = 0; i < info.subIdx[d]; i++) {
-        off += (ABI_WORD_SZ * (1 + get_abi_u32_be(in, off))); // The `1` accounts for the word containing array sz
-      }
-      // Get the new number of elements and bump the offset past that word
-      numElem = get_abi_u32_be(in, off);
-      off += ABI_WORD_SZ;
-    }
-    for (size_t i = 0; i < numElem; i++) {
-      decode_elem_param((outPtr + (i * elemSz)), outSz, type, in, off + (ABI_WORD_SZ * i));
-      outSz -= ABI_WORD_SZ;
-    }
-    return elemSz * numElem;
+    } 
+    // Sanity check on size
+    if (info.subIdx[d] >= numElem)
+      return 0;
+    // If we are on the highest dimension, grab the element corresponding to that index
+    return decode_elem_param(out, outSz, type, in, off + (ABI_WORD_SZ * info.subIdx[d]));
   }
   // For dynamic types, the param offset word contains the number of *bytes*, and we can copy them directly.
-  // Arrays of dynamic types have the offsets encoded first
   if (true == is_dynamic_type_array(type)) {
-    
-    
+
+
     // TODO: Account for >1D dynamic type arrays
 
 
@@ -165,8 +154,12 @@ static size_t decode_non_elem_param(void * out, size_t outSz, ABI_t type, void *
     off += ABI_WORD_SZ;
     if (info.subIdx[d] >= numElem)
       return 0;
-    // Fetch the offset of the item we want and bump our offset by that amount
-    off += get_abi_u32_be(in, off + (info.subIdx[d] * ABI_WORD_SZ));
+    // Skip past the (variable sized) elements that come before the one we want to fetch
+    for (size_t i = 0; i < info.subIdx[d]; i++) {
+      size_t arraySz = get_abi_u32_be(in, off);
+      size_t numWords = 1 + (arraySz / ABI_WORD_SZ);
+      off += (1 + numWords) * ABI_WORD_SZ; // Skip the size word and all words containing this element
+    }
   }
   size_t arraySzBytes = get_abi_u32_be(in, off);
   off += ABI_WORD_SZ; // Account for this word, which tells us the size of the ensuing data.
