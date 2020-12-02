@@ -117,6 +117,7 @@ static size_t decode_non_elem_param(void * out, size_t outSz, ABI_t type, void *
   uint8_t * inPtr = in;
   size_t numElem = 0;
   if (is_elementary_type_array(type)) {
+    // Handle elementary type arrays. Each element in these arrays is of size ABI_WORD_SZ.
     // For fixed size arrays, the number of elements is defined in the ABI itself.
     // For variable size arrays, the number of elements is encoded in the offset word.
     numElem = type.arraySz;
@@ -124,49 +125,76 @@ static size_t decode_non_elem_param(void * out, size_t outSz, ABI_t type, void *
       numElem = get_abi_u32_be(in, off);
       off += ABI_WORD_SZ; // Account for this word, which tells us the number of ensuing elements.
     }
-    // Copy the data. 
+    // Copy the data...
     if (type.extraDepth > d) {
-      // Sanity check on size
-      if (info.subIdx[d] >= numElem)
-        return 0;
       // If we need to go to a higher dimension, get the offset of the nested array we want to look up
       // and bump the dimension before recursing.
+      if (info.subIdx[d] >= numElem)
+        return 0;
+      // Skip past the elements in this nested array.
+      // The first word captures the number of ensuing elements and then we skip that
+      // number of additional words which contain the data in this nested array.
       for (size_t i = 0; i < info.subIdx[d]; i++)
         off += (ABI_WORD_SZ * (1 + get_abi_u32_be(in, off)));
-      d++;
-      return decode_non_elem_param(out, outSz, type, in, off, info, d);
+      // Recurse with the updated dimension and new offset, which now points to the
+      // beginning of the next-dimension nested array.
+      return decode_non_elem_param(out, outSz, type, in, off, info, d+1);
     } 
-    // Sanity check on size
+    // If we are on the highest dimension, grab the element corresponding to that index
     if (info.subIdx[d] >= numElem)
       return 0;
-    // If we are on the highest dimension, grab the element corresponding to that index
     return decode_elem_param(out, outSz, type, in, off + (ABI_WORD_SZ * info.subIdx[d]));
   }
   // For dynamic types, the param offset word contains the number of *bytes*, and we can copy them directly.
+  // Dynamic arrays have an additional word in front of each element, which describes
+  // the number of bytes in that element. Note that these elements are written in 32
+  // byte words, but may take multiple words (e.g. a 36 byte array would take 2 words).
   if (true == is_dynamic_type_array(type)) {
 
 
-    // TODO: Account for >1D dynamic type arrays
+    // TODO: ACCOUNT FOR FIXED SIZE DYNAMIC ARRAYS >1D
 
-
-    // Get the number of elements and bump the offset
+    // Get the number of elements in the array of this dimension and bump the offset
     numElem = get_abi_u32_be(in, off);
     off += ABI_WORD_SZ;
     if (info.subIdx[d] >= numElem)
       return 0;
-    // Skip past the (variable sized) elements that come before the one we want to fetch
+
+    // If we need to recurse to a higher dimension, skip to the offset that starts
+    // the nested array we want at the next dimension.
+    if (type.extraDepth > d) {
+      // Skip to the i-th array in *this* dimension.
+      for (size_t i = 0; i < info.subIdx[d]; i++) {
+        size_t _numElem = get_abi_u32_be(in, off);
+        off += ABI_WORD_SZ;
+        // Skip all elements in this nested array
+        for (size_t j = 0; j < _numElem; j++) {
+          size_t arraySz = get_abi_u32_be(in, off);
+          size_t numWords = 1 + (arraySz / ABI_WORD_SZ);
+          // Skip the size word and all words containing this element
+          off += (1 + numWords) * ABI_WORD_SZ; 
+        }
+      }
+      // Now we can recurse.
+      return decode_non_elem_param(out, outSz, type, in, off, info, d+1);
+    } 
+    // If we are on the highest dimension, skip past the variable sized elements
+    // that come before the one we want to fetch.
     for (size_t i = 0; i < info.subIdx[d]; i++) {
       size_t arraySz = get_abi_u32_be(in, off);
       size_t numWords = 1 + (arraySz / ABI_WORD_SZ);
-      off += (1 + numWords) * ABI_WORD_SZ; // Skip the size word and all words containing this element
+      // Skip the size word and all words containing this element
+      off += (1 + numWords) * ABI_WORD_SZ; 
     }
   }
-  size_t arraySzBytes = get_abi_u32_be(in, off);
-  off += ABI_WORD_SZ; // Account for this word, which tells us the size of the ensuing data.
-  if (outSz < arraySzBytes)
+  // We should now be at the offset corresponding to the size of the dynamic
+  // type element that we want.
+  size_t elemSz = get_abi_u32_be(in, off);
+  off += ABI_WORD_SZ;
+  if (outSz < elemSz)
     return 0;
-  memcpy(out, inPtr + off, arraySzBytes);
-  return arraySzBytes;
+  memcpy(out, inPtr + off, elemSz);
+  return elemSz;
 }
 
 //===============================================
