@@ -110,10 +110,10 @@ typedef enum {
 //    which means we should have a set of `N` 32-byte words, where each word contains an elementary type
 // * `arraySz` is only used if `isArray==true`. If `arraySz==0`, it is a dynamic sized array
 typedef struct {
-  ABIAtomic_t type;   // The underlying, atomic type
-  bool isArray;       // Whether this is an array of the atomic type
-  size_t arraySz;     // Size of the array (non-zero implies fixed size array)
-  size_t extraDepth;  // Number of extra dimensions in the array, if applicable (2D array -> extraDepth=1)
+  ABIAtomic_t type;                     // The underlying, atomic type
+  bool isArray;                         // Whether this is an array of the atomic type
+  size_t arraySz[ABI_ARRAY_DEPTH_MAX];  // Size of the array dimensions (non-zero implies fixed size array)
+  size_t extraDepth;                    // Number of extra dimensions in the array, if applicable (2D array -> extraDepth=1)
 } ABI_t;
 
 typedef struct {
@@ -134,11 +134,12 @@ bool is_valid_abi_type(ABI_t t);
 // Note that padding is stripped from elementary types, which are encoded in 32-byte words regardless
 // of the underlying data size. For example, a single ABI_BOOL would be the last byte of a
 // 32 byte word. Dynamic types are returned in full, as there is no padding.
-// @param `out`     - output buffer to be written
-// @param `outSz`   - size of output buffer to be written
-// @param `types`   - array of ABI type definitions
-// @param `info`    - information about the data to be selected
-// @return          - number of bytes written to `out`; 0 on error.
-size_t abi_decode_param(void * out, size_t outSz, ABI_t * types, ABISelector_t info, void * in);
+// @param `out`       - output buffer to be written
+// @param `outSz`     - size of output buffer to be written
+// @param `types`     - array of ABI type definitions
+// @param `numTypes`  - the number of types in this ABI definition
+// @param `info`      - information about the data to be selected
+// @return            - number of bytes written to `out`; 0 on error.
+size_t abi_decode_param(void * out, size_t outSz, ABI_t * types, size_t numTypes, ABISelector_t info, void * in);
 
 #endif
