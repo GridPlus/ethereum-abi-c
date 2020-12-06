@@ -21,17 +21,15 @@ static bool is_fixed_bytes_type(ABI_t t) {
 }
 
 // Dynamic types include `bytes` and `string` - they are always variable length.
-static bool is_dynamic_abi_type(ABI_t t) {
-  return ((true == is_valid_abi_type(t)) && (
-          (t.type == ABI_BYTES || t.type == ABI_STRING)));
+static bool is_dynamic_atomic_type(ABI_t t) {
+  return (t.type == ABI_BYTES || t.type == ABI_STRING);
 }
 
 // Elementary types are atomic types for which there is only one instance (as
 // opposed to array types, which contain a fixed or variable number of instances).
-static bool is_elementary_abi_type(ABI_t t) {
-  return ((true == is_valid_abi_type(t) &&
-          (false == is_dynamic_abi_type(t)) &&
-          (false == t.isArray)));
+static bool is_elementary_atomic_type(ABI_t t) {
+  return ((false == is_dynamic_atomic_type(t)) &&
+          (false == t.isArray));
 }
 
 // Array types are simply arrays of elementary types. These can be either 
@@ -39,30 +37,60 @@ static bool is_elementary_abi_type(ABI_t t) {
 // arrays have `t.isArray = true, t.arraySz = 0` while fixed size have the size
 // defined in `t.arraySz`.
 static bool is_elementary_type_array(ABI_t t) {
-  return ((true == is_valid_abi_type(t) &&
-          (false == is_dynamic_abi_type(t)) &&
-          (true == t.isArray)));
-}
-
-static bool is_dynamic_type_array(ABI_t t) {
-  return ((true == is_valid_abi_type(t)) &&
-          (true == is_dynamic_abi_type(t)) &&
+  return ((false == is_dynamic_atomic_type(t)) &&
           (true == t.isArray));
 }
 
-static bool is_dynamic_type_fixed_sz_array(ABI_t type) {
-  if (false == is_dynamic_type_array(type))
+static bool is_dynamic_type_array(ABI_t t) {
+  return ((true == is_dynamic_atomic_type(t)) &&
+          (true == t.isArray));
+}
+
+static inline bool is_fixed_sz_array(ABI_t type) {
+  // The ABI spec doesn't really handle multi-dimensional fixed sized arrays,
+  // so we will reject any fixed size arrays beyond 1D.
+  // The reference implementation (ethereumjs-abi) treats x[3][3] exactly the
+  // same as x[3][] and x[3][1], which we do not want to allow.
+  // First dimension must be fixed
+  if (type.extraDepth > 0)
     return false;
-  for (size_t i = 0; i < ABI_ARRAY_DEPTH_MAX; i++) {
-    if (type.arraySz[i] > 0)
-      return true;
+  // First dimension must be fixed, which means `arraySz` is a positive number
+  // indicating the dimension size.
+  return type.arraySz[0] > 0;
+}
+
+static inline bool is_variable_sz_array(ABI_t type) {
+  // All dimensions must be variable
+  for (size_t i = 0; i <= type.extraDepth; i++) {
+    if (type.arraySz[i] != 0)
+      return false;
   }
-  return false;
+  return true;
+}
+
+static bool is_elementary_type_fixed_sz_array(ABI_t type) {
+  return ((is_elementary_type_array(type)) && 
+          (is_fixed_sz_array(type)));
+}
+
+static bool is_elementary_type_variable_sz_array(ABI_t type) {
+  return ((is_elementary_type_array(type)) &&
+          (is_variable_sz_array(type)));
+}
+
+static bool is_dynamic_type_fixed_sz_array(ABI_t type) {
+  return ((is_dynamic_type_array(type)) &&
+          (is_fixed_sz_array(type)));
+}
+
+static bool is_dynamic_type_variable_sz_array(ABI_t type) {
+  return ((is_dynamic_type_array(type)) &&
+          (is_variable_sz_array(type)));
 }
 
 // Get the number of bytes describing an elementary data type
 static size_t elem_sz(ABI_t t) {
-  if (true == is_dynamic_abi_type(t))
+  if (true == is_dynamic_atomic_type(t))
     return 0;
   if (true == is_fixed_bytes_type(t))
     return 1 + (t.type - ABI_BYTES1);
@@ -104,7 +132,7 @@ static size_t elem_sz(ABI_t t) {
 // but may contain less data than 32 bytes.
 static size_t decode_elem_param(void * out, size_t outSz, ABI_t type, void * in, size_t off) {
   // Ensure there is space for this data in `out` and that this is an elementary type
-  if ((ABI_WORD_SZ > outSz) || (false == is_valid_abi_type(type)) || (true == is_dynamic_abi_type(type)))
+  if ((ABI_WORD_SZ > outSz) || (true == is_dynamic_atomic_type(type)))
     return 0;
   size_t nBytes = elem_sz(type);
   uint8_t * inPtr = in;
@@ -119,12 +147,24 @@ static size_t decode_elem_param(void * out, size_t outSz, ABI_t type, void * in,
   return nBytes;
 }
 
-// Decode a "non-elementary" param. This includes dynamic types as well as both fixed and vairable
-// sized arrays containing a set of params of a single elementary type.
-static size_t decode_non_elem_param(void * out, size_t outSz, ABI_t type, void * in, size_t off, ABISelector_t info, size_t d) {
-  if (false == is_valid_abi_type(type))
+// Decode a parameter of dynamic type. Each dynamic type is encoded as a 32 byte size prefix word, which
+// describes the size of the dynamic type, and `N` words which fully capture the dynamic data.
+// We only copy the data itself, i.e. we discard the right-padded zeros.
+static size_t decode_dynamic_param(void * out, size_t outSz, ABI_t type, void * in, size_t off) {
+  if (false == is_dynamic_atomic_type(type))
     return 0;
   uint8_t * inPtr = in;
+  size_t elemSz = get_abi_u32_be(in, off);
+  off += ABI_WORD_SZ;
+  if (outSz < elemSz)
+    return 0;
+  memcpy(out, inPtr + off, elemSz);
+  return elemSz;
+}
+
+// Decode a "non-elementary" param. This includes dynamic types as well as both fixed and vairable
+// sized arrays containing a set of params of a single elementary type.
+static size_t decode_param(void * out, size_t outSz, ABI_t type, void * in, size_t off, ABISelector_t info, size_t d) {
   size_t numElem = 0;
   if (is_elementary_type_array(type)) {
     // Handle elementary type arrays. Each element in these arrays is of size ABI_WORD_SZ.
@@ -148,7 +188,7 @@ static size_t decode_non_elem_param(void * out, size_t outSz, ABI_t type, void *
         off += (ABI_WORD_SZ * (1 + get_abi_u32_be(in, off)));
       // Recurse with the updated dimension and new offset, which now points to the
       // beginning of the next-dimension nested array.
-      return decode_non_elem_param(out, outSz, type, in, off, info, d+1);
+      return decode_param(out, outSz, type, in, off, info, d+1);
     } 
     // If we are on the highest dimension, grab the element corresponding to that index
     if (info.subIdx[d] >= numElem)
@@ -160,9 +200,6 @@ static size_t decode_non_elem_param(void * out, size_t outSz, ABI_t type, void *
   // the number of bytes in that element. Note that these elements are written in 32
   // byte words, but may take multiple words (e.g. a 36 byte array would take 2 words).
   if (true == is_dynamic_type_array(type)) {
-
-    // TODO: ACCOUNT FOR FIXED SIZE DYNAMIC ARRAYS >1D
-
     // Get the number of elements in the array of this dimension and bump the offset
     numElem = get_abi_u32_be(in, off);
     off += ABI_WORD_SZ;
@@ -184,7 +221,7 @@ static size_t decode_non_elem_param(void * out, size_t outSz, ABI_t type, void *
         }
       }
       // Now we can recurse.
-      return decode_non_elem_param(out, outSz, type, in, off, info, d+1);
+      return decode_param(out, outSz, type, in, off, info, d+1);
     }
     if (true == is_dynamic_type_fixed_sz_array(type)) {
       // For dynamic type arrays of fixed size, we have interpreted the size as `numElem`.
@@ -209,15 +246,9 @@ static size_t decode_non_elem_param(void * out, size_t outSz, ABI_t type, void *
       }
     }
   }
-
   // We should now be at the offset corresponding to the size of the dynamic
   // type element that we want.
-  size_t elemSz = get_abi_u32_be(in, off);
-  off += ABI_WORD_SZ;
-  if (outSz < elemSz)
-    return 0;
-  memcpy(out, inPtr + off, elemSz);
-  return elemSz;
+  return decode_dynamic_param(out, outSz, type, in, off);
 }
 
 // Get the amount of data that in fixed-size arrays *up to* the `idx`-th word which is *not*
@@ -268,21 +299,28 @@ static size_t get_param_offset(ABI_t * types, size_t idx, void * in) {
 //===============================================
 // API
 //===============================================
-
-bool is_valid_abi_type(ABI_t t) {
-  return t.type < ABI_MAX && t.type > ABI_NONE;
+bool is_valid_abi_schema(ABI_t * types, size_t numTypes) {
+  for (size_t i = 0; i < numTypes; i++) {
+    if ((types[i].type >= ABI_MAX && types[i].type <= ABI_NONE) ||
+        ( (false == is_elementary_atomic_type(types[i])) &&
+          (false == is_dynamic_atomic_type(types[i])) &&
+          (false == is_elementary_type_fixed_sz_array(types[i])) &&
+          (false == is_elementary_type_variable_sz_array(types[i])) &&
+          (false == is_dynamic_type_fixed_sz_array(types[i])) &&
+          (false == is_dynamic_type_variable_sz_array(types[i])) ))
+      return false;
+  }
+  return true;
 }
 
-  // TODO: Determine how to handle
-  //      * fixed sizes in multiple dimensions
-  //      * fixed sizes in some dimensions and variable sizes in others
 size_t abi_decode_param(void * out, size_t outSz, ABI_t * types, size_t numTypes, ABISelector_t info, void * in) {
   if (out == NULL || types == NULL || in == NULL)
     return 0;
 
   // Ensure we have valid types passed
   ABI_t type = types[info.typeIdx];
-  if (false == is_valid_abi_type(type) || info.typeIdx >= numTypes)
+  if ((info.typeIdx >= numTypes) ||
+      (false == is_valid_abi_schema(types, numTypes)))
     return 0;
 
   // Offset of the word in the encoded blob. Per ABI spec, the first `n` words correspond
@@ -294,13 +332,13 @@ size_t abi_decode_param(void * out, size_t outSz, ABI_t * types, size_t numTypes
   size_t wordOff = get_param_offset(types, info.typeIdx, in);
 
   // Elementary types are all 32 bytes long and can be easily memcopied into our output buffer.
-  if (true == is_elementary_abi_type(type))
+  if (true == is_elementary_atomic_type(type))
     return decode_elem_param(out, outSz, type, in, wordOff);
 
   // For arrays of fixed size which contain dynamic type params, we just need to skip to the
   // param offset (i.e. the data is *not* offset as it is for variable-length arrays)
   if (true == is_dynamic_type_fixed_sz_array(types[info.typeIdx]))
-    return decode_non_elem_param(out, outSz, type, in, wordOff, info, 0);
+    return decode_param(out, outSz, type, in, wordOff, info, 0);
 
   // Dynamic and array types are encoded essentially the same as one another.
   // The value at the `typeIdx`-th word in the input buffer contains the offset of the data (in BE).
@@ -311,5 +349,5 @@ size_t abi_decode_param(void * out, size_t outSz, ABI_t * types, size_t numTypes
   off += get_fixed_array_extra_sz(types, numTypes);
 
   // Decode the param
-  return decode_non_elem_param(out, outSz, type, in, off, info, 0);
+  return decode_param(out, outSz, type, in, off, info, 0);
 }

@@ -127,8 +127,17 @@ typedef struct {
                                       // meaning data can only be fetched from the highest dimension of the array.
 } ABISelector_t;
 
-// Return true if the ABI_t is readable and valid according to the parsing rules of ABI and this module.
-bool is_valid_abi_type(ABI_t t);
+// Ensure we have a valid ABI schema being passed. We check the following:
+// * Is each atomic type a valid ABI type? (e.g. uint32, string)
+// * Is each type an single element or array (fixed or dynamic)?
+// Note that for arrays, we only support all fixed or all dynamic dimensions,
+// meaning things like `string[3][3]` and `string[]` are allowed, but
+// `string[3][]` are not. This is because the ABI spec is pretty loose about
+// defining these encodings, so we will just be strict and reject combinations.
+// @param `tyes`      - array of types making up the schema
+// @param `numTypes`  - number of types in the schema
+// @return            - true if we can handle every type in this schema
+bool is_valid_abi_schema(ABI_t * types, size_t numTypes);
 
 // Decode and return a param's data in `out` given a set of ABI types and an `in` buffer.
 // Note that padding is stripped from elementary types, which are encoded in 32-byte words regardless
