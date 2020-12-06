@@ -51,21 +51,15 @@ static inline bool is_fixed_sz_array(ABI_t type) {
   // so we will reject any fixed size arrays beyond 1D.
   // The reference implementation (ethereumjs-abi) treats x[3][3] exactly the
   // same as x[3][] and x[3][1], which we do not want to allow.
-  // First dimension must be fixed
-  if (type.extraDepth > 0)
-    return false;
-  // First dimension must be fixed, which means `arraySz` is a positive number
-  // indicating the dimension size.
-  return type.arraySz[0] > 0;
+  // Array must be 1D and have a non-zero arraySz
+  return (type.isArray && type.extraDepth == 0 && type.arraySz > 0);
 }
 
 static inline bool is_variable_sz_array(ABI_t type) {
-  // All dimensions must be variable
-  for (size_t i = 0; i <= type.extraDepth; i++) {
-    if (type.arraySz[i] != 0)
-      return false;
-  }
-  return true;
+  // arraySz must be 0 to denote variable sized arrays.
+  return ((type.isArray) && 
+          (type.extraDepth < (ABI_ARRAY_DEPTH_MAX - 1)) && 
+          (type.arraySz == 0));
 }
 
 static bool is_elementary_type_fixed_sz_array(ABI_t type) {
@@ -170,7 +164,7 @@ static size_t decode_param(void * out, size_t outSz, ABI_t type, void * in, size
     // Handle elementary type arrays. Each element in these arrays is of size ABI_WORD_SZ.
     // For fixed size arrays, the number of elements is defined in the ABI itself.
     // For variable size arrays, the number of elements is encoded in the offset word.
-    numElem = type.arraySz[d];
+    numElem = type.arraySz;
     if (numElem == 0) {
       numElem = get_abi_u32_be(in, off);
       off += ABI_WORD_SZ; // Account for this word, which tells us the number of ensuing elements.
@@ -268,9 +262,7 @@ static size_t get_fixed_array_extra_sz(ABI_t * types, size_t idx) {
   size_t off = 0;
   for (size_t i = 0; i < idx; i++) {
     if (true == is_dynamic_type_fixed_sz_array(types[i])) {
-      for (size_t j = 0; j <= types[i].extraDepth; j++) {
-        off += ABI_WORD_SZ * types[i].arraySz[j];
-      }
+      off += ABI_WORD_SZ * types[i].arraySz;
     }
   }
   return off;
@@ -282,12 +274,10 @@ static size_t get_param_offset(ABI_t * types, size_t idx, void * in) {
   size_t off = 0;
   for (size_t i = 0; i < idx; i++) {
     if (true == is_dynamic_type_fixed_sz_array(types[i])) {
-      for (size_t j = 0; j < ABI_ARRAY_DEPTH_MAX; j++) {
-        for (size_t k = 0; k < types[i].arraySz[j]; k++) {
-          // Offset for word describing item size and the item itself, which 
-          // may be more than one word.
-          off += ABI_WORD_SZ * (2 + (get_abi_u32_be(in, off) / ABI_WORD_SZ));
-        }
+      for (size_t j = 0; j < types[i].arraySz; j++) {
+        // Offset for word describing item size and the item itself, which 
+        // may be more than one word.
+        off += ABI_WORD_SZ * (2 + (get_abi_u32_be(in, off) / ABI_WORD_SZ));
       }
     } else {
       off += ABI_WORD_SZ;

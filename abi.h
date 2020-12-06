@@ -112,8 +112,10 @@ typedef enum {
 typedef struct {
   ABIAtomic_t type;                     // The underlying, atomic type
   bool isArray;                         // Whether this is an array of the atomic type
-  size_t arraySz[ABI_ARRAY_DEPTH_MAX];  // Size of the array dimensions (non-zero implies fixed size array)
-  size_t extraDepth;                    // Number of extra dimensions in the array, if applicable (2D array -> extraDepth=1)
+  size_t arraySz;                       // Non-zero implies fixed size array and describes the size. 
+                                        // (Only 1D fixed size arrays allowed)
+  size_t extraDepth;                    // Number of extra dimensions in the array, if applicable 
+                                        // (e.g. 2D array -> extraDepth=1)
 } ABI_t;
 
 typedef struct {
