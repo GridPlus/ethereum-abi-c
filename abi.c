@@ -31,6 +31,16 @@ static bool is_elementary_atomic_type(ABI_t t) {
   return false == is_dynamic_atomic_type(t);
 }
 
+static bool is_single_elementary_type(ABI_t t) {
+  return ((true == is_elementary_atomic_type(t)) &&
+          (false == t.isArray));
+}
+
+static bool is_single_dynamic_type(ABI_t t) {
+  return ((true == is_dynamic_atomic_type(t)) &&
+          (false == t.isArray));
+}
+
 // Array types are simply arrays of elementary types. These can be either 
 // fixed size (e.g. uint256[3]) or variable size (e.g. uint256[]). Variable sized
 // arrays have `t.isArray = true, t.arraySz = 0` while fixed size have the size
@@ -292,9 +302,9 @@ static size_t get_param_offset(ABI_t * types, size_t idx, void * in) {
 //===============================================
 bool is_valid_abi_schema(ABI_t * types, size_t numTypes) {
   for (size_t i = 0; i < numTypes; i++) {
-    if ((types[i].type >= ABI_MAX && types[i].type <= ABI_NONE) ||
-        ( (false == is_elementary_atomic_type(types[i])) &&
-          (false == is_dynamic_atomic_type(types[i])) &&
+    if ((types[i].type >= ABI_MAX || types[i].type <= ABI_NONE) ||
+        ( (false == is_single_elementary_type(types[i])) &&
+          (false == is_single_dynamic_type(types[i])) &&
           (false == is_elementary_type_fixed_sz_array(types[i])) &&
           (false == is_elementary_type_variable_sz_array(types[i])) &&
           (false == is_dynamic_type_fixed_sz_array(types[i])) &&
@@ -323,7 +333,7 @@ size_t abi_decode_param(void * out, size_t outSz, ABI_t * types, size_t numTypes
   size_t wordOff = get_param_offset(types, info.typeIdx, in);
 
   // Elementary types are all 32 bytes long and can be easily memcopied into our output buffer.
-  if (true == is_elementary_atomic_type(type) && false == is_elementary_type_array(type)) {
+  if (true == is_single_elementary_type(type)) {
     // For single value elementary params, the param offset is all we need
     return decode_elem_param(out, outSz, type, in, wordOff);
   } else if (true == is_elementary_type_fixed_sz_array(type)) {

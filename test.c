@@ -372,26 +372,34 @@ uint8_t ex9_param_200[3] = { 0x30, 0x30, 0x30, };
 uint8_t ex9_param_210[3] = { 0x30, 0x30, 0x31, };
 uint8_t ex9_param_211[3] = { 0x30, 0x30, 0x32, };
 uint16_t ex9_param_3 = 1000;
-// 10: g(uint32, uint[][], string[1][1], uint16)
-// 11: g(uint32, uint[1][1], string[1][1], uint16)
+
 
 
 // FAILURE CASES
+// g(unknown)
+ABI_t fail_ex1_abi[1] = {
+  { .type = 103820, },
+};
+// g(uint32, uint[][], string[1][1], uint16)
+ABI_t fail_ex2_abi[4] = {
+  { .type = ABI_UINT32, },
+  { .type = ABI_UINT, .isArray = true, .extraDepth = 1, },
+  { .type = ABI_STRING, .isArray = true, .arraySz = 1, .extraDepth = 1 },
+  {. type = ABI_UINT16, }
+};
+// g(uint32, uint[1][1], string[][], uint16)
+ABI_t fail_ex3_abi[4] = {
+  { .type = ABI_UINT32, },
+  { .type = ABI_UINT, .isArray = true, .arraySz = 1, .extraDepth = 1, },
+  { .type = ABI_STRING, .isArray = true, .extraDepth = 1 },
+  {. type = ABI_UINT16, }
+};
 // g(string[][], string[3][3], uint32)
-// ABI_t ex8_abi[2] = {
-//   { .type = ABI_STRING, .isArray = true, .extraDepth = 1},
-//   { .type = ABI_STRING, .isArray = true, .arraySz = {3, 3} }
-// };
-// g(string[][], string[3][])
-// ABI_t ex8_abi[2] = {
-//   { .type = ABI_STRING, .isArray = true, .extraDepth = 1},
-//   { .type = ABI_STRING, .isArray = true, .arraySz = {3, 0} }
-// };
-// g(string[][], string[][3])
-// ABI_t ex8_abi[2] = {
-//   { .type = ABI_STRING, .isArray = true, .extraDepth = 1},
-//   { .type = ABI_STRING, .isArray = true, .arraySz = {0, 3} }
-// };
+ABI_t fail_ex4_abi[3] = {
+  { .type = ABI_STRING, .isArray = true, .extraDepth = 1},
+  { .type = ABI_STRING, .isArray = true, .arraySz = 3, .extraDepth = 1 },
+  { .type = ABI_UINT32 },
+};
 
 //===============================================================
 // TESTS
@@ -684,6 +692,13 @@ static inline void test_ex9(uint8_t * out, size_t outSz) {
   printf("passed.\n\r");
 }
 
+static inline void test_failures(uint8_t * out, size_t outSz) {
+  assert(false == is_valid_abi_schema(fail_ex1_abi, ARRAY_SIZE(fail_ex1_abi)));
+  assert(false == is_valid_abi_schema(fail_ex2_abi, ARRAY_SIZE(fail_ex2_abi)));
+  assert(false == is_valid_abi_schema(fail_ex3_abi, ARRAY_SIZE(fail_ex3_abi)));
+  assert(false == is_valid_abi_schema(fail_ex4_abi, ARRAY_SIZE(fail_ex4_abi)));
+}
+
 int main() {
   printf("=============================\n\r");
   printf(" RUNNING ABI TESTS...\n\r");
@@ -702,6 +717,7 @@ int main() {
   test_ex7(out, sizeof(out));
   test_ex8(out, sizeof(out));
   test_ex9(out, sizeof(out));
+  test_failures(out, sizeof(out));
 
   printf("=============================\n\r");
   printf(" ALL ABI TESTS PASSING!\n\r");
