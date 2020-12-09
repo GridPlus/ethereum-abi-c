@@ -127,6 +127,8 @@ typedef struct {
                                       // indices [0,1,2,3,4], it would only lookup array[0][1].
                                       // Similarly, a 3D array with indices [1, 0, 0, 0, 0] would fetch array[1][0][0],
                                       // meaning data can only be fetched from the highest dimension of the array.
+                                      // NOTE: For fixed-size arrays (ABI_t->arraySz = 0), all indices beyond
+                                      // subIdx[0] are ignored.
 } ABISelector_t;
 
 // Ensure we have a valid ABI schema being passed. We check the following:
@@ -150,7 +152,15 @@ bool is_valid_abi_schema(ABI_t * types, size_t numTypes);
 // @param `types`     - array of ABI type definitions
 // @param `numTypes`  - the number of types in this ABI definition
 // @param `info`      - information about the data to be selected
+// @param `in`        - Buffer containin the input data
+// @param `inSz`      - Size of `in`
 // @return            - number of bytes written to `out`; 0 on error.
-size_t abi_decode_param(void * out, size_t outSz, ABI_t * types, size_t numTypes, ABISelector_t info, void * in);
+size_t abi_decode_param(void * out, 
+                        size_t outSz, 
+                        ABI_t * types, 
+                        size_t numTypes, 
+                        ABISelector_t info, 
+                        void * in,
+                        size_t inSz);
 
 #endif

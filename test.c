@@ -416,13 +416,15 @@ static inline uint16_t get_u16_be(uint8_t * in, size_t off) {
 
 static inline void test_ex1(uint8_t * out, size_t outSz) {
   ABISelector_t info = { .typeIdx = 0 };
+  uint8_t * in = ex1_encoded+4;
+  size_t inSz = sizeof(ex1_encoded) - 4;
   printf("Example 1...");
   // function baz(uint32 x, bool y)
-  assert(abi_decode_param(out, outSz, ex1_abi, ARRAY_SIZE(ex1_abi), info, ex1_encoded+4) == sizeof(ex1_param_0));
+  assert(abi_decode_param(out, outSz, ex1_abi, ARRAY_SIZE(ex1_abi), info, in, inSz) == sizeof(ex1_param_0));
   assert((out[3] | out[2] << 8 | out[1] << 16 | out[0] << 24) == ex1_param_0);
   memset(out, 0, outSz);
   info.typeIdx = 1;
-  assert(abi_decode_param(out, outSz, ex1_abi, ARRAY_SIZE(ex1_abi), info, ex1_encoded+4) == sizeof(ex1_param_1));
+  assert(abi_decode_param(out, outSz, ex1_abi, ARRAY_SIZE(ex1_abi), info, in, inSz) == sizeof(ex1_param_1));
   assert((bool) out[0] == ex1_param_1);
   memset(out, 0, outSz);
   printf("passed.\n\r");
@@ -430,15 +432,17 @@ static inline void test_ex1(uint8_t * out, size_t outSz) {
 
 static inline void test_ex2(uint8_t * out, size_t outSz) {
   ABISelector_t info = { .typeIdx = 0 };
+  uint8_t * in = ex2_encoded+4;
+  size_t inSz = sizeof(ex2_encoded) - 4;
   printf("Example 2...");
   // function bar(bytes3[2])
   info.typeIdx = 0;
   info.subIdx[0] = 0;
-  assert(abi_decode_param(out, outSz, ex2_abi, ARRAY_SIZE(ex2_abi), info, ex2_encoded+4) == sizeof(ex2_param_00));
+  assert(abi_decode_param(out, outSz, ex2_abi, ARRAY_SIZE(ex2_abi), info, in, inSz) == sizeof(ex2_param_00));
   assert(0 == memcmp(ex2_param_00, out, sizeof(ex2_param_00)));
   memset(out, 0, outSz);
   info.subIdx[0] = 1;
-  assert(abi_decode_param(out, outSz, ex2_abi, ARRAY_SIZE(ex2_abi), info, ex2_encoded+4) == sizeof(ex2_param_01));
+  assert(abi_decode_param(out, outSz, ex2_abi, ARRAY_SIZE(ex2_abi), info, in, inSz) == sizeof(ex2_param_01));
   assert(0 == memcmp(ex2_param_01, out, sizeof(ex2_param_01)));
   memset(out, 0, outSz);
   info.subIdx[0] = 0;
@@ -447,26 +451,28 @@ static inline void test_ex2(uint8_t * out, size_t outSz) {
 
 static inline void test_ex3(uint8_t * out, size_t outSz) {
   ABISelector_t info = { .typeIdx = 0 };
+  uint8_t * in = ex3_encoded+4;
+  size_t inSz = sizeof(ex3_encoded) - 4;
   printf("Example 3...");
   // function sam(bytes, bool, uint[])
-  assert(abi_decode_param(out, outSz, ex3_abi, ARRAY_SIZE(ex3_abi), info, ex3_encoded+4) == sizeof(ex3_param_0)); // 4 bytes in payload
+  assert(abi_decode_param(out, outSz, ex3_abi, ARRAY_SIZE(ex3_abi), info, in, inSz) == sizeof(ex3_param_0)); // 4 bytes in payload
   assert(0 == memcmp(ex3_param_0, out, sizeof(ex3_param_0)));
   memset(out, 0, outSz);
   info.typeIdx = 1;
-  assert(abi_decode_param(out, outSz, ex3_abi, ARRAY_SIZE(ex3_abi), info, ex3_encoded+4) == sizeof(ex3_param_1)); // 1 byte for bool
+  assert(abi_decode_param(out, outSz, ex3_abi, ARRAY_SIZE(ex3_abi), info, in, inSz) == sizeof(ex3_param_1)); // 1 byte for bool
   assert((bool) out[0] == ex3_param_1);
   memset(out, 0, outSz);
   info.typeIdx = 2;
   info.subIdx[0] = 0;
-  assert(abi_decode_param(out, outSz, ex3_abi, ARRAY_SIZE(ex3_abi), info, ex3_encoded+4) == sizeof(ex3_param_20)); // 3 uint values, each 32 bytes
+  assert(abi_decode_param(out, outSz, ex3_abi, ARRAY_SIZE(ex3_abi), info, in, inSz) == sizeof(ex3_param_20)); // 3 uint values, each 32 bytes
   assert(0 == memcmp(ex3_param_20, out, sizeof(ex3_param_20)));
   memset(out, 0, outSz);
   info.subIdx[0] = 1;
-  assert(abi_decode_param(out, outSz, ex3_abi, ARRAY_SIZE(ex3_abi), info, ex3_encoded+4) == sizeof(ex3_param_21)); // 3 uint values, each 32 bytes
+  assert(abi_decode_param(out, outSz, ex3_abi, ARRAY_SIZE(ex3_abi), info, in, inSz) == sizeof(ex3_param_21)); // 3 uint values, each 32 bytes
   assert(0 == memcmp(ex3_param_21, out, sizeof(ex3_param_21)));
   memset(out, 0, outSz);
   info.subIdx[0] = 2;
-  assert(abi_decode_param(out, outSz, ex3_abi, ARRAY_SIZE(ex3_abi), info, ex3_encoded+4) == sizeof(ex3_param_22)); // 3 uint values, each 32 bytes
+  assert(abi_decode_param(out, outSz, ex3_abi, ARRAY_SIZE(ex3_abi), info, in, inSz) == sizeof(ex3_param_22)); // 3 uint values, each 32 bytes
   assert(0 == memcmp(ex3_param_22, out, sizeof(ex3_param_22)));
   memset(out, 0, outSz);
   info.subIdx[0] = 0;
@@ -475,28 +481,30 @@ static inline void test_ex3(uint8_t * out, size_t outSz) {
 
 static inline void test_ex4(uint8_t * out, size_t outSz) {
   ABISelector_t info = { .typeIdx = 0 };
+  uint8_t * in = ex4_encoded+4;
+  size_t inSz = sizeof(ex4_encoded) - 4;
   printf("Example 4...");
   // f(uint,uint32[],bytes10,bytes)
   info.typeIdx = 0;
-  assert(abi_decode_param(out, outSz, ex4_abi, ARRAY_SIZE(ex4_abi), info, ex4_encoded+4) == sizeof(ex4_param_0)); // uint = uint256 = 32 bytes
+  assert(abi_decode_param(out, outSz, ex4_abi, ARRAY_SIZE(ex4_abi), info, in, inSz) == sizeof(ex4_param_0)); // uint = uint256 = 32 bytes
   assert(0 == memcmp(ex4_param_0, out, sizeof(ex4_param_0)));
   memset(out, 0, outSz);
   info.typeIdx = 1;
   info.subIdx[0] = 0;
-  assert(abi_decode_param(out, outSz, ex4_abi, ARRAY_SIZE(ex4_abi), info, ex4_encoded+4) == sizeof(ex4_param_10)); // uint32 (see payload)
+  assert(abi_decode_param(out, outSz, ex4_abi, ARRAY_SIZE(ex4_abi), info, in, inSz) == sizeof(ex4_param_10)); // uint32 (see payload)
   assert(get_u32_be(out, 0) == ex4_param_10);
   memset(out, 0, outSz);
   info.subIdx[0] = 1;
-  assert(abi_decode_param(out, outSz, ex4_abi, ARRAY_SIZE(ex4_abi), info, ex4_encoded+4) == sizeof(ex4_param_11)); // uint32 (see payload)
+  assert(abi_decode_param(out, outSz, ex4_abi, ARRAY_SIZE(ex4_abi), info, in, inSz) == sizeof(ex4_param_11)); // uint32 (see payload)
   assert(get_u32_be(out, 0) == ex4_param_11);
   memset(out, 0, outSz);
   info.subIdx[0] =  0;
   info.typeIdx = 2;
-  assert(abi_decode_param(out, outSz, ex4_abi, ARRAY_SIZE(ex4_abi), info, ex4_encoded+4) == sizeof(ex4_param_2)); // bytes10 = 10 bytes
+  assert(abi_decode_param(out, outSz, ex4_abi, ARRAY_SIZE(ex4_abi), info, in, inSz) == sizeof(ex4_param_2)); // bytes10 = 10 bytes
   assert(0 == memcmp(ex4_param_2, out, sizeof(ex4_param_2)));
   memset(out, 0, outSz);
   info.typeIdx = 3;
-  assert(abi_decode_param(out, outSz, ex4_abi, ARRAY_SIZE(ex4_abi), info, ex4_encoded+4) == sizeof(ex4_param_3)); // 0x0d = 13 bytes
+  assert(abi_decode_param(out, outSz, ex4_abi, ARRAY_SIZE(ex4_abi), info, in, inSz) == sizeof(ex4_param_3)); // 0x0d = 13 bytes
   assert(0 == memcmp(ex4_param_3, out, sizeof(ex4_param_3)));
   memset(out, 0, outSz);
   printf("passed.\n\r");
@@ -504,43 +512,45 @@ static inline void test_ex4(uint8_t * out, size_t outSz) {
 
 static inline void test_ex5(uint8_t * out, size_t outSz) {
   ABISelector_t info = { .typeIdx = 0 };
+  uint8_t * in = ex5_encoded+4;
+  size_t inSz = sizeof(ex5_encoded) - 4;
   printf("Example 5...");
   // g(uint[][],string[])
   info.typeIdx = 0;
-  assert(abi_decode_param(out, outSz, ex5_abi, ARRAY_SIZE(ex5_abi), info, ex5_encoded+4) == sizeof(ex5_param_000));
+  assert(abi_decode_param(out, outSz, ex5_abi, ARRAY_SIZE(ex5_abi), info, in, inSz) == sizeof(ex5_param_000));
   assert(0 == memcmp(ex5_param_000, out, sizeof(ex5_param_000)));
   memset(out, 0, outSz);
   info.subIdx[1] = 1;
-  assert(abi_decode_param(out, outSz, ex5_abi, ARRAY_SIZE(ex5_abi), info, ex5_encoded+4) == sizeof(ex5_param_001));
+  assert(abi_decode_param(out, outSz, ex5_abi, ARRAY_SIZE(ex5_abi), info, in, inSz) == sizeof(ex5_param_001));
   assert(0 == memcmp(ex5_param_001, out, sizeof(ex5_param_001)));
   memset(out, 0, outSz);
   info.subIdx[0] = 1;
   info.subIdx[1] = 0;
-  assert(abi_decode_param(out, outSz, ex5_abi, ARRAY_SIZE(ex5_abi), info, ex5_encoded+4) == sizeof(ex5_param_010));
+  assert(abi_decode_param(out, outSz, ex5_abi, ARRAY_SIZE(ex5_abi), info, in, inSz) == sizeof(ex5_param_010));
   assert(0 == memcmp(ex5_param_010, out, sizeof(ex5_param_010)));
   memset(out, 0, outSz);
   // If we go outside of the array size we should get 0 bytes back
   info.subIdx[0] = 2;
   info.subIdx[1] = 0;
-  assert(abi_decode_param(out, outSz, ex5_abi, ARRAY_SIZE(ex5_abi), info, ex5_encoded+4) == 0);
+  assert(abi_decode_param(out, outSz, ex5_abi, ARRAY_SIZE(ex5_abi), info, in, inSz) == 0);
   memset(out, 0, outSz);
   info.subIdx[0] = 0;
   info.subIdx[1] = 2;
-  assert(abi_decode_param(out, outSz, ex5_abi, ARRAY_SIZE(ex5_abi), info, ex5_encoded+4) == 0);
+  assert(abi_decode_param(out, outSz, ex5_abi, ARRAY_SIZE(ex5_abi), info, in, inSz) == 0);
   memset(out, 0, outSz);
   // Now get the strings
   info.typeIdx = 1;
   info.subIdx[0] = 0;
   info.subIdx[1] = 0;
-  assert(abi_decode_param(out, outSz, ex5_abi, ARRAY_SIZE(ex5_abi), info, ex5_encoded+4) == sizeof(ex5_param_10));
+  assert(abi_decode_param(out, outSz, ex5_abi, ARRAY_SIZE(ex5_abi), info, in, inSz) == sizeof(ex5_param_10));
   assert(0 == memcmp(ex5_param_10, out, sizeof(ex5_param_10)));
   memset(out, 0, outSz);
   info.subIdx[0] = 1;
-  assert(abi_decode_param(out, outSz, ex5_abi, ARRAY_SIZE(ex5_abi), info, ex5_encoded+4) == sizeof(ex5_param_11));
+  assert(abi_decode_param(out, outSz, ex5_abi, ARRAY_SIZE(ex5_abi), info, in, inSz) == sizeof(ex5_param_11));
   assert(0 == memcmp(ex5_param_11, out, sizeof(ex5_param_11)));
   memset(out, 0, outSz);
   info.subIdx[0] = 2;
-  assert(abi_decode_param(out, outSz, ex5_abi, ARRAY_SIZE(ex5_abi), info, ex5_encoded+4) == sizeof(ex5_param_12));
+  assert(abi_decode_param(out, outSz, ex5_abi, ARRAY_SIZE(ex5_abi), info, in, inSz) == sizeof(ex5_param_12));
   assert(0 == memcmp(ex5_param_12, out, sizeof(ex5_param_12)));
   memset(out, 0, outSz);
 
@@ -549,53 +559,57 @@ static inline void test_ex5(uint8_t * out, size_t outSz) {
 
 static inline void test_ex6(uint8_t * out, size_t outSz) {
   ABISelector_t info = { .typeIdx = 0 };
+  uint8_t * in = ex6_encoded+4;
+  size_t inSz = sizeof(ex6_encoded) - 4;
   printf("Example 6...");
   // f(uint32,string[][])
   info.typeIdx = 1;
   info.subIdx[0] = 0;
   info.subIdx[1] = 0;
-  assert(abi_decode_param(out, outSz, ex6_abi, ARRAY_SIZE(ex6_abi), info, ex6_encoded+4) == sizeof(ex6_param_100));
+  assert(abi_decode_param(out, outSz, ex6_abi, ARRAY_SIZE(ex6_abi), info, in, inSz) == sizeof(ex6_param_100));
   assert(0 == memcmp(ex6_param_100, out, sizeof(ex6_param_100)));
   memset(out, 0, outSz);
   info.subIdx[0] = 1;
   info.subIdx[1] = 0;
-  assert(abi_decode_param(out, outSz, ex6_abi, ARRAY_SIZE(ex6_abi), info, ex6_encoded+4) == sizeof(ex6_param_110));
+  assert(abi_decode_param(out, outSz, ex6_abi, ARRAY_SIZE(ex6_abi), info, in, inSz) == sizeof(ex6_param_110));
   assert(0 == memcmp(ex6_param_110, out, sizeof(ex6_param_110)));
   memset(out, 0, outSz);
   info.subIdx[0] = 1;
   info.subIdx[1] = 1;
-  assert(abi_decode_param(out, outSz, ex6_abi, ARRAY_SIZE(ex6_abi), info, ex6_encoded+4) == sizeof(ex6_param_111));
+  assert(abi_decode_param(out, outSz, ex6_abi, ARRAY_SIZE(ex6_abi), info, in, inSz) == sizeof(ex6_param_111));
   assert(0 == memcmp(ex6_param_111, out, sizeof(ex6_param_111)));
   printf("passed.\n\r");
 }
 
 static inline void test_ex7(uint8_t * out, size_t outSz) {
   ABISelector_t info = { .typeIdx = 0 };
+  uint8_t * in = ex7_encoded+4;
+  size_t inSz = sizeof(ex7_encoded) - 4;
   printf("Example 7...");
   // g(string[][], string[3], uint32)
-  assert(abi_decode_param(out, outSz, ex7_abi, ARRAY_SIZE(ex7_abi), info, ex7_encoded+4) == sizeof(ex7_param_000));
+  assert(abi_decode_param(out, outSz, ex7_abi, ARRAY_SIZE(ex7_abi), info, in, inSz) == sizeof(ex7_param_000));
   assert(0 == memcmp(ex7_param_000, out, sizeof(ex7_param_000)));
   memset(out, 0, outSz);
   info.subIdx[0] = 1;
-  assert(abi_decode_param(out, outSz, ex7_abi, ARRAY_SIZE(ex7_abi), info, ex7_encoded+4) == sizeof(ex7_param_010));
+  assert(abi_decode_param(out, outSz, ex7_abi, ARRAY_SIZE(ex7_abi), info, in, inSz) == sizeof(ex7_param_010));
   assert(0 == memcmp(ex7_param_010, out, sizeof(ex7_param_010)));
   memset(out, 0, outSz);
   info.subIdx[0] = 0;
   info.typeIdx = 1;
-  assert(abi_decode_param(out, outSz, ex7_abi, ARRAY_SIZE(ex7_abi), info, ex7_encoded+4) == sizeof(ex7_param_10));
+  assert(abi_decode_param(out, outSz, ex7_abi, ARRAY_SIZE(ex7_abi), info, in, inSz) == sizeof(ex7_param_10));
   assert(0 == memcmp(ex7_param_10, out, sizeof(ex7_param_10)));
   memset(out, 0, outSz);
   info.subIdx[0] = 1;
-  assert(abi_decode_param(out, outSz, ex7_abi, ARRAY_SIZE(ex7_abi), info, ex7_encoded+4) == sizeof(ex7_param_11));
+  assert(abi_decode_param(out, outSz, ex7_abi, ARRAY_SIZE(ex7_abi), info, in, inSz) == sizeof(ex7_param_11));
   assert(0 == memcmp(ex7_param_11, out, sizeof(ex7_param_11)));
   memset(out, 0, outSz);
   info.subIdx[0] = 2;
-  assert(abi_decode_param(out, outSz, ex7_abi, ARRAY_SIZE(ex7_abi), info, ex7_encoded+4) == sizeof(ex7_param_12));
+  assert(abi_decode_param(out, outSz, ex7_abi, ARRAY_SIZE(ex7_abi), info, in, inSz) == sizeof(ex7_param_12));
   assert(0 == memcmp(ex7_param_12, out, sizeof(ex7_param_12)));
   memset(out, 0, outSz);
   info.subIdx[0] = 0;
   info.typeIdx = 2;
-  assert(abi_decode_param(out, outSz, ex7_abi, ARRAY_SIZE(ex7_abi), info, ex7_encoded+4) == sizeof(ex7_param_2));
+  assert(abi_decode_param(out, outSz, ex7_abi, ARRAY_SIZE(ex7_abi), info, in, inSz) == sizeof(ex7_param_2));
   assert(get_u32_be(out, 0) == ex7_param_2);
   memset(out, 0, outSz);
   printf("passed.\n\r");
@@ -603,42 +617,44 @@ static inline void test_ex7(uint8_t * out, size_t outSz) {
 
 static inline void test_ex8(uint8_t * out, size_t outSz) {
   ABISelector_t info = { .typeIdx = 0 };
+  uint8_t * in = ex8_encoded+4;
+  size_t inSz = sizeof(ex8_encoded) - 4;
   printf("Example 8...");
   // g(uint32, uint[][], string[][], uint16)
-  assert(abi_decode_param(out, outSz, ex8_abi, ARRAY_SIZE(ex8_abi), info, ex8_encoded+4) == sizeof(ex8_param_0));
+  assert(abi_decode_param(out, outSz, ex8_abi, ARRAY_SIZE(ex8_abi), info, in, inSz) == sizeof(ex8_param_0));
   assert(get_u32_be(out, 0) == ex8_param_0);
   memset(out, 0, outSz);
   info.typeIdx = 1;
  
-  assert(abi_decode_param(out, outSz, ex8_abi, ARRAY_SIZE(ex8_abi), info, ex8_encoded+4) == sizeof(ex8_param_100));
+  assert(abi_decode_param(out, outSz, ex8_abi, ARRAY_SIZE(ex8_abi), info, in, inSz) == sizeof(ex8_param_100));
   assert(0 == memcmp(ex8_param_100, out, sizeof(ex8_param_100)));
   memset(out, 0, outSz);
 
   info.subIdx[0] = 1;
-  assert(abi_decode_param(out, outSz, ex8_abi, ARRAY_SIZE(ex8_abi), info, ex8_encoded+4) == sizeof(ex8_param_110));
+  assert(abi_decode_param(out, outSz, ex8_abi, ARRAY_SIZE(ex8_abi), info, in, inSz) == sizeof(ex8_param_110));
   assert(0 == memcmp(ex8_param_110, out, sizeof(ex8_param_110)));
   memset(out, 0, outSz);
   
   info.subIdx[0] = 0;
   info.typeIdx = 2;
-  assert(abi_decode_param(out, outSz, ex8_abi, ARRAY_SIZE(ex8_abi), info, ex8_encoded+4) == sizeof(ex8_param_200));
+  assert(abi_decode_param(out, outSz, ex8_abi, ARRAY_SIZE(ex8_abi), info, in, inSz) == sizeof(ex8_param_200));
   assert(0 == memcmp(ex8_param_200, out, sizeof(ex8_param_200)));
   memset(out, 0, outSz);
   
   info.subIdx[0] = 1;
-  assert(abi_decode_param(out, outSz, ex8_abi, ARRAY_SIZE(ex8_abi), info, ex8_encoded+4) == sizeof(ex8_param_210));
+  assert(abi_decode_param(out, outSz, ex8_abi, ARRAY_SIZE(ex8_abi), info, in, inSz) == sizeof(ex8_param_210));
   assert(0 == memcmp(ex8_param_210, out, sizeof(ex8_param_210)));
   memset(out, 0, outSz);
 
   info.subIdx[1] = 1;
-  assert(abi_decode_param(out, outSz, ex8_abi, ARRAY_SIZE(ex8_abi), info, ex8_encoded+4) == sizeof(ex8_param_211));
+  assert(abi_decode_param(out, outSz, ex8_abi, ARRAY_SIZE(ex8_abi), info, in, inSz) == sizeof(ex8_param_211));
   assert(0 == memcmp(ex8_param_211, out, sizeof(ex8_param_211)));
   memset(out, 0, outSz);
 
   info.subIdx[0] = 0;
   info.subIdx[1] = 0;
   info.typeIdx = 3;
-  assert(abi_decode_param(out, outSz, ex8_abi, ARRAY_SIZE(ex8_abi), info, ex8_encoded+4) == sizeof(ex8_param_3));
+  assert(abi_decode_param(out, outSz, ex8_abi, ARRAY_SIZE(ex8_abi), info, in, inSz) == sizeof(ex8_param_3));
   assert(get_u16_be(out, 0) == ex8_param_3);
   memset(out, 0, outSz);
   printf("passed.\n\r");
@@ -646,46 +662,48 @@ static inline void test_ex8(uint8_t * out, size_t outSz) {
 
 static inline void test_ex9(uint8_t * out, size_t outSz) {
   ABISelector_t info = { .typeIdx = 0 };
+  uint8_t * in = ex9_encoded+4;
+  size_t inSz = sizeof(ex9_encoded) - 4;
   printf("Example 9...");
   // g(uint32, uint[3], string[]][], uint16)
-  assert(abi_decode_param(out, outSz, ex9_abi, ARRAY_SIZE(ex9_abi), info, ex9_encoded+4) == sizeof(ex9_param_0));
+  assert(abi_decode_param(out, outSz, ex9_abi, ARRAY_SIZE(ex9_abi), info, in, inSz) == sizeof(ex9_param_0));
   assert(get_u32_be(out, 0) == ex9_param_0);
   memset(out, 0, outSz);
   info.typeIdx = 1;
  
-  assert(abi_decode_param(out, outSz, ex9_abi, ARRAY_SIZE(ex9_abi), info, ex9_encoded+4) == sizeof(ex9_param_10));
+  assert(abi_decode_param(out, outSz, ex9_abi, ARRAY_SIZE(ex9_abi), info, in, inSz) == sizeof(ex9_param_10));
   assert(0 == memcmp(ex9_param_10, out, sizeof(ex9_param_10)));
   memset(out, 0, outSz);
   info.subIdx[0] = 1;
-  assert(abi_decode_param(out, outSz, ex9_abi, ARRAY_SIZE(ex9_abi), info, ex9_encoded+4) == sizeof(ex9_param_11));
+  assert(abi_decode_param(out, outSz, ex9_abi, ARRAY_SIZE(ex9_abi), info, in, inSz) == sizeof(ex9_param_11));
   assert(0 == memcmp(ex9_param_11, out, sizeof(ex9_param_11)));
   memset(out, 0, outSz);
 
   info.subIdx[0] = 2;
-  assert(abi_decode_param(out, outSz, ex9_abi, ARRAY_SIZE(ex9_abi), info, ex9_encoded+4) == sizeof(ex9_param_12));
+  assert(abi_decode_param(out, outSz, ex9_abi, ARRAY_SIZE(ex9_abi), info, in, inSz) == sizeof(ex9_param_12));
   assert(0 == memcmp(ex9_param_12, out, sizeof(ex9_param_12)));
   memset(out, 0, outSz);
   info.subIdx[0] = 0;
 
   info.typeIdx = 2;
-  assert(abi_decode_param(out, outSz, ex9_abi, ARRAY_SIZE(ex9_abi), info, ex9_encoded+4) == sizeof(ex9_param_200));
+  assert(abi_decode_param(out, outSz, ex9_abi, ARRAY_SIZE(ex9_abi), info, in, inSz) == sizeof(ex9_param_200));
   assert(0 == memcmp(ex9_param_200, out, sizeof(ex9_param_200)));
   memset(out, 0, outSz);
   
   info.subIdx[0] = 1;
-  assert(abi_decode_param(out, outSz, ex9_abi, ARRAY_SIZE(ex9_abi), info, ex9_encoded+4) == sizeof(ex9_param_210));
+  assert(abi_decode_param(out, outSz, ex9_abi, ARRAY_SIZE(ex9_abi), info, in, inSz) == sizeof(ex9_param_210));
   assert(0 == memcmp(ex9_param_210, out, sizeof(ex9_param_210)));
   memset(out, 0, outSz);
 
   info.subIdx[1] = 1;
-  assert(abi_decode_param(out, outSz, ex9_abi, ARRAY_SIZE(ex9_abi), info, ex9_encoded+4) == sizeof(ex9_param_211));
+  assert(abi_decode_param(out, outSz, ex9_abi, ARRAY_SIZE(ex9_abi), info, in, inSz) == sizeof(ex9_param_211));
   assert(0 == memcmp(ex9_param_211, out, sizeof(ex9_param_211)));
   memset(out, 0, outSz);
 
   info.subIdx[0] = 0;
   info.subIdx[1] = 0;
   info.typeIdx = 3;
-  assert(abi_decode_param(out, outSz, ex9_abi, ARRAY_SIZE(ex9_abi), info, ex9_encoded+4) == sizeof(ex9_param_3));
+  assert(abi_decode_param(out, outSz, ex9_abi, ARRAY_SIZE(ex9_abi), info, in, inSz) == sizeof(ex9_param_3));
   assert(get_u16_be(out, 0) == ex9_param_3);
   memset(out, 0, outSz);
 
@@ -693,10 +711,26 @@ static inline void test_ex9(uint8_t * out, size_t outSz) {
 }
 
 static inline void test_failures(uint8_t * out, size_t outSz) {
+  // Confirm bad schemas are rejected
   assert(false == is_valid_abi_schema(fail_ex1_abi, ARRAY_SIZE(fail_ex1_abi)));
   assert(false == is_valid_abi_schema(fail_ex2_abi, ARRAY_SIZE(fail_ex2_abi)));
   assert(false == is_valid_abi_schema(fail_ex3_abi, ARRAY_SIZE(fail_ex3_abi)));
   assert(false == is_valid_abi_schema(fail_ex4_abi, ARRAY_SIZE(fail_ex4_abi)));
+  // Test shorter `inSz` values
+  uint8_t * in = ex1_encoded+4;
+  size_t inSz = sizeof(ex1_encoded) - 4;
+  ABISelector_t info = { .typeIdx = 0 };
+  // We need inSz to be at least 32 bytes to allow for extracting of the first word
+  assert(abi_decode_param(out, outSz, ex1_abi, ARRAY_SIZE(ex1_abi), info, in, inSz) > 0);
+  assert(abi_decode_param(out, outSz, ex1_abi, ARRAY_SIZE(ex1_abi), info, in, ABI_WORD_SZ) > 0);
+  assert(abi_decode_param(out, outSz, ex1_abi, ARRAY_SIZE(ex1_abi), info, in, ABI_WORD_SZ-1) == 0);
+  // We need inSz to be at least 64 bytes to allow for extracting of the second word
+  info.typeIdx = 1;
+  assert(abi_decode_param(out, outSz, ex1_abi, ARRAY_SIZE(ex1_abi), info, in, 2*ABI_WORD_SZ) > 0);
+  assert(abi_decode_param(out, outSz, ex1_abi, ARRAY_SIZE(ex1_abi), info, in, 2*ABI_WORD_SZ-1) == 0);
+  assert(abi_decode_param(out, outSz, ex1_abi, ARRAY_SIZE(ex1_abi), info, in, inSz) > 0);
+  assert(abi_decode_param(out, outSz, ex1_abi, ARRAY_SIZE(ex1_abi), info, in, inSz-1) == 0);
+  memset(out, 0, outSz);
 }
 
 int main() {
