@@ -28,8 +28,7 @@ static bool is_dynamic_atomic_type(ABI_t t) {
 // Elementary types are atomic types for which there is only one instance (as
 // opposed to array types, which contain a fixed or variable number of instances).
 static bool is_elementary_atomic_type(ABI_t t) {
-  return ((false == is_dynamic_atomic_type(t)) &&
-          (false == t.isArray));
+  return false == is_dynamic_atomic_type(t);
 }
 
 // Array types are simply arrays of elementary types. These can be either 
@@ -37,7 +36,7 @@ static bool is_elementary_atomic_type(ABI_t t) {
 // arrays have `t.isArray = true, t.arraySz = 0` while fixed size have the size
 // defined in `t.arraySz`.
 static bool is_elementary_type_array(ABI_t t) {
-  return ((false == is_dynamic_atomic_type(t)) &&
+  return ((true == is_elementary_atomic_type(t)) &&
           (true == t.isArray));
 }
 
@@ -279,6 +278,8 @@ static size_t get_param_offset(ABI_t * types, size_t idx, void * in) {
         // may be more than one word.
         off += ABI_WORD_SZ * (2 + (get_abi_u32_be(in, off) / ABI_WORD_SZ));
       }
+    } else if (true == is_elementary_type_fixed_sz_array(types[i])) {
+      off += ABI_WORD_SZ * types[i].arraySz;
     } else {
       off += ABI_WORD_SZ;
     }
@@ -322,8 +323,14 @@ size_t abi_decode_param(void * out, size_t outSz, ABI_t * types, size_t numTypes
   size_t wordOff = get_param_offset(types, info.typeIdx, in);
 
   // Elementary types are all 32 bytes long and can be easily memcopied into our output buffer.
-  if (true == is_elementary_atomic_type(type))
+  if (true == is_elementary_atomic_type(type) && false == is_elementary_type_array(type)) {
+    // For single value elementary params, the param offset is all we need
     return decode_elem_param(out, outSz, type, in, wordOff);
+  } else if (true == is_elementary_type_fixed_sz_array(type)) {
+    // For fixed size arrays, we need to add skipped elements to the offset
+    wordOff += ABI_WORD_SZ * info.subIdx[0];
+    return decode_elem_param(out, outSz, type, in, wordOff);
+  }
 
   // For arrays of fixed size which contain dynamic type params, we just need to skip to the
   // param offset (i.e. the data is *not* offset as it is for variable-length arrays)
