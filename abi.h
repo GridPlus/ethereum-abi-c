@@ -48,7 +48,6 @@ typedef enum {
   // Supported fixed types
   ABI_ADDRESS,
   ABI_BOOL,
-  ABI_FUNCTION, // 20 byte address + 4 byte function selector
   ABI_UINT8,
   ABI_UINT16,
   ABI_UINT24,
