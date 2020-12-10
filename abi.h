@@ -37,7 +37,7 @@
 #include <stdlib.h>
 
 #define ABI_WORD_SZ 32
-#define ABI_ARRAY_DEPTH_MAX 5
+#define ABI_ARRAY_DEPTH_MAX 2
 
 // Enumeration of ABI types.
 // * ABI_BYTES and ABI_STRING are both dynamic types and can be any size
@@ -113,22 +113,11 @@ typedef struct {
   ABIAtomic_t type;                     // The underlying, atomic type
   bool isArray;                         // Whether this is an array of the atomic type
   size_t arraySz;                       // Non-zero implies fixed size array and describes the size. 
-                                        // (Only 1D fixed size arrays allowed)
-  size_t extraDepth;                    // Number of extra dimensions in the array, if applicable 
-                                        // (e.g. 2D array -> extraDepth=1)
 } ABI_t;
 
 typedef struct {
   size_t typeIdx;                     // The index of the type param in the function definition
-  size_t subIdx[ABI_ARRAY_DEPTH_MAX]; // The set of indices describing the multi-dimensional array element
-                                      // to fetch, e.g. array[0][1][6] would be [ 0, 1, 6, 0, 0 ]
-                                      // Note that this util will not fetch any indices beyond `1+extraDepth`
-                                      // as described in the ABI_t type, so if you had a 2D array and passed
-                                      // indices [0,1,2,3,4], it would only lookup array[0][1].
-                                      // Similarly, a 3D array with indices [1, 0, 0, 0, 0] would fetch array[1][0][0],
-                                      // meaning data can only be fetched from the highest dimension of the array.
-                                      // NOTE: For fixed-size arrays (ABI_t->arraySz = 0), all indices beyond
-                                      // subIdx[0] are ignored.
+  size_t arrIdx;                      // The index of the item in an array, if applicable, to fetch
 } ABISelector_t;
 
 // Ensure we have a valid ABI schema being passed. We check the following:
@@ -141,7 +130,37 @@ typedef struct {
 // @param `tyes`      - array of types making up the schema
 // @param `numTypes`  - number of types in the schema
 // @return            - true if we can handle every type in this schema
-bool is_valid_abi_schema(ABI_t * types, size_t numTypes);
+bool abi_is_valid_schema(ABI_t * types, size_t numTypes);
+
+// Fetch the array size of a specific dimension of an array. The array must
+// be variable-size, since fixed-size arrays may only have one dimension and
+// the size is defined in the type.
+// @param `types`     - array of ABI type definitions
+// @param `numTypes`  - the number of types in this ABI definition
+// @param `info`      - information about the data to be selected
+// @param `in`        - Buffer containin the input data
+// @param `inSz`      - Size of `in`
+// @return            - Size of array dimension; 0 on error.
+size_t abi_get_array_sz(ABI_t * types, 
+                        size_t numTypes, 
+                        ABISelector_t info, 
+                        void * in,
+                        size_t inSz);
+
+// Get the element size of a particular parameter whose type is dynamic.
+// This is equivalent to `abi_decode_param`, but does not copy data to an output
+// buffer and only works with dynamic types.
+// @param `types`     - array of ABI type definitions
+// @param `numTypes`  - the number of types in this ABI definition
+// @param `info`      - information about the data to be selected
+// @param `in`        - Buffer containin the input data
+// @param `inSz`      - Size of `in`
+// @return            - number of bytes written to `out`; 0 on error.
+size_t abi_get_param_sz(ABI_t * types, 
+                        size_t numTypes, 
+                        ABISelector_t info, 
+                        void * in, 
+                        size_t inSz);
 
 // Decode and return a param's data in `out` given a set of ABI types and an `in` buffer.
 // Note that padding is stripped from elementary types, which are encoded in 32-byte words regardless
