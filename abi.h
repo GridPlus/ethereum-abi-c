@@ -38,7 +38,7 @@
 
 #define ABI_WORD_SZ 32
 #define ABI_ARRAY_DEPTH_MAX 2
-
+#pragma pack(push,1)
 // Enumeration of ABI types.
 // * ABI_BYTES and ABI_STRING are both dynamic types and can be any size
 // * Everything else is an elementary type and must be packed into a 32 byte word
@@ -118,6 +118,7 @@ typedef struct {
   size_t typeIdx;                     // The index of the type param in the function definition
   size_t arrIdx;                      // The index of the item in an array, if applicable, to fetch
 } ABISelector_t;
+#pragma pack(pop)
 
 // Ensure we have a valid ABI schema being passed. We check the following:
 // * Is each atomic type a valid ABI type? (e.g. uint32, string)
