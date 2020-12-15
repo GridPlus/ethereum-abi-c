@@ -130,7 +130,7 @@ typedef struct {
 // @param `tyes`      - array of types making up the schema
 // @param `numTypes`  - number of types in the schema
 // @return            - true if we can handle every type in this schema
-bool abi_is_valid_schema(ABI_t * types, size_t numTypes);
+bool abi_is_valid_schema(const ABI_t * types, size_t numTypes);
 
 // Fetch the array size of a specific dimension of an array. The array must
 // be variable-size, since fixed-size arrays may only have one dimension and
@@ -141,10 +141,10 @@ bool abi_is_valid_schema(ABI_t * types, size_t numTypes);
 // @param `in`        - Buffer containin the input data
 // @param `inSz`      - Size of `in`
 // @return            - Size of array dimension; 0 on error.
-size_t abi_get_array_sz(ABI_t * types, 
+size_t abi_get_array_sz(const ABI_t * types, 
                         size_t numTypes, 
                         ABISelector_t info, 
-                        void * in,
+                        const void * in,
                         size_t inSz);
 
 // Get the element size of a particular parameter whose type is dynamic.
@@ -156,10 +156,10 @@ size_t abi_get_array_sz(ABI_t * types,
 // @param `in`        - Buffer containin the input data
 // @param `inSz`      - Size of `in`
 // @return            - number of bytes written to `out`; 0 on error.
-size_t abi_get_param_sz(ABI_t * types, 
+size_t abi_get_param_sz(const ABI_t * types, 
                         size_t numTypes, 
                         ABISelector_t info, 
-                        void * in, 
+                        const void * in, 
                         size_t inSz);
 
 // Decode and return a param's data in `out` given a set of ABI types and an `in` buffer.
@@ -176,10 +176,10 @@ size_t abi_get_param_sz(ABI_t * types,
 // @return            - number of bytes written to `out`; 0 on error.
 size_t abi_decode_param(void * out, 
                         size_t outSz, 
-                        ABI_t * types, 
+                        const ABI_t * types, 
                         size_t numTypes, 
                         ABISelector_t info, 
-                        void * in,
+                        const void * in,
                         size_t inSz);
 
 #endif

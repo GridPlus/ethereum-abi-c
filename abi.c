@@ -10,8 +10,8 @@
 
 // Get the u32 that is represented in big endian in a 32 byte word (i.e. last 4 bytes).
 // Returns a little endian numerical representation of bytes loc+29:loc+32.
-static uint32_t get_abi_u32_be(void * in, size_t loc) {
-  uint8_t * inPtr = in;
+static uint32_t get_abi_u32_be(const void * in, size_t loc) {
+  const uint8_t * inPtr = in;
   size_t l = loc + 32;
   return inPtr[l-1] | inPtr[l-2] << 8 | inPtr[l-3] << 16 | inPtr[l-4] << 24;
 }
@@ -131,12 +131,12 @@ static size_t elem_sz(ABI_t t) {
 
 // Decode a parameter of elementary type. Each elementary type is encoded in a single 32 byte word,
 // but may contain less data than 32 bytes.
-static size_t decode_elem_param(void * out, size_t outSz, ABI_t type, void * in, size_t inSz, size_t off) {
+static size_t decode_elem_param(void * out, size_t outSz, ABI_t type, const void * in, size_t inSz, size_t off) {
   // Ensure there is space for this data in `out` and that this is an elementary type
   if ((ABI_WORD_SZ > outSz) || (true == is_dynamic_atomic_type(type)))
     return 0;
   size_t nBytes = elem_sz(type);
-  uint8_t * inPtr = in;
+  const uint8_t * inPtr = in;
   if (outSz < nBytes)
     return 0;
   // Most types have data written at the end of the word. Start with this assumption. 
@@ -156,13 +156,13 @@ static size_t decode_elem_param(void * out, size_t outSz, ABI_t type, void * in,
 static size_t decode_dynamic_param( void * out, 
                                     size_t outSz, 
                                     ABI_t type, 
-                                    void * in, 
+                                    const void * in, 
                                     size_t inSz, 
                                     size_t off,
                                     bool szOnly) {
   if (false == is_dynamic_atomic_type(type))
     return 0;
-  uint8_t * inPtr = in;
+  const uint8_t * inPtr = in;
   if (off + ABI_WORD_SZ > inSz)
     return 0;
   size_t elemSz = get_abi_u32_be(in, off);
@@ -184,7 +184,7 @@ return 0;
 static size_t decode_param( void * out, 
                             size_t outSz, 
                             ABI_t type, 
-                            void * in, 
+                            const void * in, 
                             size_t inSz, 
                             size_t off, 
                             ABISelector_t info,
@@ -263,7 +263,7 @@ static size_t decode_param( void * out,
 // For reference, the string[3] is termed a "fixed-size, dynamic-type array", and `string[]` is termed a
 // "variable-size, dynamic-type array", for lack of less precise names.
 // I have no idea why the protocol was designed this way, but there it is.
-static size_t get_fixed_array_extra_sz(ABI_t * types, size_t idx) {
+static size_t get_fixed_array_extra_sz(const ABI_t * types, size_t idx) {
   size_t off = 0;
   for (size_t i = 0; i < idx; i++) {
     if (true == is_dynamic_type_fixed_sz_array(types[i])) {
@@ -275,7 +275,7 @@ static size_t get_fixed_array_extra_sz(ABI_t * types, size_t idx) {
 
 // Get the offset of a param in the payload. This accounts for the fixed array dynamic type
 // edge case and returns the offset at which the `idx`-th param begins.
-static size_t get_param_offset(ABI_t * types, size_t idx, void * in, size_t inSz) {
+static size_t get_param_offset(const ABI_t * types, size_t idx, const void * in, size_t inSz) {
   size_t off = 0;
   for (size_t i = 0; i < idx; i++) {
     if (true == is_dynamic_type_fixed_sz_array(types[i])) {
@@ -298,7 +298,7 @@ static size_t get_param_offset(ABI_t * types, size_t idx, void * in, size_t inSz
 //===============================================
 // API
 //===============================================
-bool abi_is_valid_schema(ABI_t * types, size_t numTypes) {
+bool abi_is_valid_schema(const ABI_t * types, size_t numTypes) {
   for (size_t i = 0; i < numTypes; i++) {
     if ((types[i].type >= ABI_MAX || types[i].type <= ABI_NONE) ||
         ( (false == is_single_elementary_type(types[i])) &&
@@ -312,10 +312,10 @@ bool abi_is_valid_schema(ABI_t * types, size_t numTypes) {
   return true;
 }
 
-size_t abi_get_array_sz(ABI_t * types, 
+size_t abi_get_array_sz(const ABI_t * types, 
                         size_t numTypes, 
                         ABISelector_t info, 
-                        void * in,
+                        const void * in,
                         size_t inSz)
 {
   ABI_t type = types[info.typeIdx];
@@ -335,10 +335,10 @@ size_t abi_get_array_sz(ABI_t * types,
   return get_abi_u32_be(in, off);
 }
 
-size_t abi_get_param_sz(ABI_t * types, 
+size_t abi_get_param_sz(const ABI_t * types, 
                         size_t numTypes, 
                         ABISelector_t info, 
-                        void * in, 
+                        const void * in, 
                         size_t inSz)
 {
   ABI_t type = types[info.typeIdx];
@@ -364,10 +364,10 @@ size_t abi_get_param_sz(ABI_t * types,
 
 size_t abi_decode_param(void * out, 
                         size_t outSz, 
-                        ABI_t * types, 
+                        const ABI_t * types, 
                         size_t numTypes, 
                         ABISelector_t info, 
-                        void * in,
+                        const void * in,
                         size_t inSz) 
 {
   if (out == NULL || types == NULL || in == NULL)
