@@ -202,7 +202,7 @@ static size_t decode_param( void * out,
       numElem = get_abi_u32_be(in, off);
       off += ABI_WORD_SZ; // Account for this word, which tells us the number of ensuing elements.
     }
-    // If we are on the highest dimension, grab the element corresponding to that index
+    // Make sure we don't overflow the buffer
     if (info.arrIdx >= numElem)
       return 0;
     return decode_elem_param(out, outSz, type, in, inSz, off + (ABI_WORD_SZ * info.arrIdx));
@@ -212,16 +212,7 @@ static size_t decode_param( void * out,
   // the number of bytes in that element. Note that these elements are written in 32
   // byte words, but may take multiple words (e.g. a 36 byte array would take 2 words).
   if (true == is_dynamic_type_array(type)) {
-    // Get the number of elements in the array of this dimension and bump the offset
-    if (off + ABI_WORD_SZ > inSz)
-      return 0;
-    numElem = get_abi_u32_be(in, off);
-    off += ABI_WORD_SZ;
     if (true == is_dynamic_type_fixed_sz_array(type)) {
-      // For dynamic type arrays of fixed size, we have interpreted the size as `numElem`.
-      // This is because fixed sized arrays do not prefix with a number of elements.
-      // We can roll back the offset a word so that the size is interpreted as `elemSz` below.
-      off -= ABI_WORD_SZ;
       // Skip elements in this fixed-size array of dynamic elements until we reach
       // the index of the data we want to fetch.
       for (size_t i = 0; i < info.arrIdx; i++) {
@@ -231,9 +222,15 @@ static size_t decode_param( void * out,
         off += ABI_WORD_SZ * (1 + (1 + (esz / ABI_WORD_SZ)));
       }
     } else {
-      // If we are on the highest dimension, skip past the variable sized elements
-      // that come before the one we want to fetch.
-      // NOTE: This does not apply to an array dimension of fixed-size
+      // Get the number of elements in the array of this dimension and bump the offset
+      if (off + ABI_WORD_SZ > inSz)
+        return 0;
+      numElem = get_abi_u32_be(in, off);
+      off += ABI_WORD_SZ;
+      // Make sure we don't overflow the buffer
+      if (info.arrIdx >= numElem)
+        return 0;
+      // Skip past the variable sized elements that come before the one we want to fetch.
       for (size_t i = 0; i < info.arrIdx; i++) {
         if (off + ABI_WORD_SZ > inSz)
           return 0;
