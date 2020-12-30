@@ -856,6 +856,7 @@ static inline void test_ex11(uint8_t * out, size_t outSz) {
   printf("Example 11...");
   assert(abi_decode_param(out, outSz, ex11_abi, ARRAY_SIZE(ex11_abi), info, in, inSz) == sizeof(ex11_param_0));
   assert(0 == memcmp(ex11_param_0, out, sizeof(ex11_param_0)));
+  assert(abi_get_param_sz(ex11_abi, ARRAY_SIZE(ex11_abi), info, in, inSz) == ARRAY_SIZE(ex11_param_0));
   memset(out, 0, outSz);
   info.typeIdx = 1;
   assert(abi_decode_param(out, outSz, ex11_abi, ARRAY_SIZE(ex11_abi), info, in, inSz) == sizeof(ex11_param_10));
@@ -905,6 +906,7 @@ static inline void test_ex12(uint8_t * out, size_t outSz) {
   info.arrIdx = 0;
   assert(abi_decode_param(out, outSz, ex12_abi, ARRAY_SIZE(ex12_abi), info, in, inSz) == sizeof(ex12_param_1));
   assert(0 == memcmp(ex12_param_1, out, sizeof(ex12_param_1)));
+  assert(abi_get_param_sz(ex12_abi, ARRAY_SIZE(ex12_abi), info, in, inSz) == ARRAY_SIZE(ex12_param_1));
   memset(out, 0, outSz);
   info.typeIdx = 2;
   assert(abi_decode_param(out, outSz, ex12_abi, ARRAY_SIZE(ex12_abi), info, in, inSz) == sizeof(ex12_param_2));

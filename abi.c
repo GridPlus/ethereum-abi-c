@@ -260,7 +260,7 @@ static size_t decode_param( void * out,
 // For reference, the string[3] is termed a "fixed-size, dynamic-type array", and `string[]` is termed a
 // "variable-size, dynamic-type array", for lack of less precise names.
 // I have no idea why the protocol was designed this way, but there it is.
-static size_t get_fixed_array_extra_sz(const ABI_t * types, size_t idx) {
+static size_t get_dynamic_array_extra_sz(const ABI_t * types, size_t idx) {
   size_t off = 0;
   for (size_t i = 0; i < idx; i++) {
     if (true == is_dynamic_type_fixed_sz_array(types[i])) {
@@ -312,6 +312,25 @@ static size_t get_param_offset(const ABI_t * types, size_t idx, const void * in,
   return off;
 }
 
+// If we have a single dynamic type or an array type that has not yet been accounted for,
+// the type's data will have an offset that may require correction if there are fixed-size,
+// dynamic-type arrays elsewhere in the function.
+// This function returns the extra offset that needs to be added in order to find this type's data.
+static size_t get_extra_dynamic_offset(const ABI_t * types, size_t numTypes, const void * in, size_t inSz, ABI_t type) {
+  // NON-ARRAY DYNAMIC TYPES:
+  // Edge case for a dynamic type that is not in an array. If this type comes before and/or after
+  // dynamic-type fixed-size arrays, those types' data are *not* counted in this type's offset.
+  // However, in this edge case, the size prefixes *are* counted.
+  // Check if this edge case applies and add to the offset if it does.
+  if (true == is_dynamic_atomic_type(type) && false == is_dynamic_type_array(type))
+    return get_dynamic_extra_data_sz(types, numTypes, in, inSz);
+  // ARRAY TYPES:
+  // If our type is not a single dynamic type, our data offset will still be wrong if there is
+  // one or more fixed-size dynamic-type arrays.
+  // See comment for `get_dynamic_array_extra_sz` for more information.
+  return get_dynamic_array_extra_sz(types, numTypes);
+}
+
 //===============================================
 // API
 //===============================================
@@ -345,9 +364,8 @@ size_t abi_get_array_sz(const ABI_t * types,
   // For a variable size array (which this must be), the `wordOff`
   // word contains an offset pointing to where the array data begins.
   uint32_t off = get_abi_u32_be(in, wordOff);
-  // Account for any fixed size arrays that may have come before this
-  // param in the function signature.
-  off += get_fixed_array_extra_sz(types, numTypes);
+  // Account for data offset edge cases
+  off += get_extra_dynamic_offset(types, numTypes, in, inSz, type);
   // Get the size of the dimension we want
   return get_abi_u32_be(in, off);
 }
@@ -373,8 +391,8 @@ size_t abi_get_param_sz(const ABI_t * types,
   if (true == is_dynamic_type_fixed_sz_array(types[info.typeIdx]))
     return decode_param(out, outSz, type, in, inSz, wordOff, info, true);
   uint32_t off = get_abi_u32_be(in, wordOff);
-  off += get_fixed_array_extra_sz(types, numTypes);
-
+  // Account for data offset edge cases
+  off += get_extra_dynamic_offset(types, numTypes, in, inSz, type);
   // The next word describes the length of the array in question.
   return decode_param(out, outSz, type, in, inSz, off, info, true);
 }
@@ -401,7 +419,7 @@ size_t abi_decode_param(void * out,
   // is of elementary type. If it is a dynamic type param, the word contains information about
   // the offset containing the raw data.
   // size_t wordOff = ABI_WORD_SZ * info.typeIdx;
-  // wordOff += get_fixed_array_extra_sz(types, info.typeIdx);
+  // wordOff += get_dynamic_array_extra_sz(types, info.typeIdx);
   size_t wordOff = get_param_offset(types, info.typeIdx, in, inSz);
 
   // ELEMENTARY TYPES:
@@ -426,27 +444,17 @@ size_t abi_decode_param(void * out,
     return decode_param(out, outSz, type, in, inSz, wordOff, info, false);
   }
 
-  // Other dynamic types offset their data in a different way, which can lead to edge cases.
+  // SINGLE DYNAMIC AND OTHER ARRAY TYPES:
+  // If we have made it here, we need to account for adjustments in the offset.
+  // See `get_extra_dynamic_offset` for more info.
+
   // The value at the `typeIdx`-th word in the input buffer contains the offset of the data (in BE).
   // We assume the index can be captured in a u32, so we only inspect the last 4 bytes
   // of the 32 byte word. We cannot realistically have payloads longer than a few kB at
   // the absolute max, so I don't see any way an offset could be larger than U32_MAX.
   uint32_t off = get_abi_u32_be(in, wordOff);
+  off += get_extra_dynamic_offset(types, numTypes, in, inSz, type);
 
-  if (true == is_dynamic_atomic_type(type) && false == is_dynamic_type_array(type)) {
-    // NON-ARRAY DYNAMIC TYPES:
-    // Edge case for a dynamic type that is not in an array. If this type comes before and/or after
-    // dynamic-type fixed-size arrays, those types' data are *not* counted in this type's offset.
-    // However, in this edge case, the size prefixes *are* counted.
-    // Check if this edge case applies and add to the offset if it does.
-    off += get_dynamic_extra_data_sz(types, numTypes, in, inSz);
-  } else {
-    // VARIABLE-ARRAY DYNAMIC TYPES:
-    // These types do include dynamic array data, but importantly do *not* include the dynamic data
-    // size prefixes in the data offset. Another edge case...
-    // See comment for `get_fixed_array_extra_sz` for more information.
-    off += get_fixed_array_extra_sz(types, numTypes);
-  }
   // Decode the param
   return decode_param(out, outSz, type, in, inSz, off, info, false);
 }
