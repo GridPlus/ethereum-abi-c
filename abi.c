@@ -270,6 +270,26 @@ static size_t get_fixed_array_extra_sz(const ABI_t * types, size_t idx) {
   return off;
 }
 
+static size_t get_dynamic_extra_data_sz(const ABI_t * types, size_t nTypes, const void * in, size_t inSz) {
+  size_t off = 0;
+  for (size_t i = 0; i < nTypes; i++) {
+    if (true == is_dynamic_type_fixed_sz_array(types[i])) {
+      // If there is a dynamic type fixed size array after the target type, we need to
+      // get the size of the data, since it doesn't get counted in the offset.
+      ABISelector_t info = {
+        .typeIdx = i,
+        .arrIdx = 0,
+      };
+      for (size_t j = 0; j < types[i].arraySz; j++) {
+        info.arrIdx = j;
+        size_t paramSz = abi_get_param_sz(types, nTypes, info, in, inSz);
+        off += ABI_WORD_SZ * (1 + (paramSz / ABI_WORD_SZ));
+      }
+    }
+  }
+  return off;
+}
+
 // Get the offset of a param in the payload. This accounts for the fixed array dynamic type
 // edge case and returns the offset at which the `idx`-th param begins.
 static size_t get_param_offset(const ABI_t * types, size_t idx, const void * in, size_t inSz) {
@@ -409,8 +429,21 @@ size_t abi_decode_param(void * out,
   // of the 32 byte word. We cannot realistically have payloads longer than a few kB at
   // the absolute max, so I don't see any way an offset could be larger than U32_MAX.
   uint32_t off = get_abi_u32_be(in, wordOff);
-  off += get_fixed_array_extra_sz(types, numTypes);
 
+  if (true == is_dynamic_atomic_type(type) && false == is_dynamic_type_array(type)) {
+    // NON-ARRAY SINGLE DYNAMIC TYPES:
+    // Edge case for a dynamic type that is not in an array. If this type comes before and/or after
+    // dynamic-type fixed-size arrays, those types' data are *not* counted in this type's offset.
+    // However, in this edge case, the size prefixes *are* counted.
+    // Check if this edge case applies and add to the offset if it does.
+    off += get_dynamic_extra_data_sz(types, numTypes, in, inSz);
+  } else {
+    // ALL OTHER TYPES:
+    // If this type comes *after* a dynamic-type array of fixed size, we will need to account for the 
+    // size prefixes because they are not counted in the offset.
+    // See comment for `get_fixed_array_extra_sz` for more information.
+    off += get_fixed_array_extra_sz(types, info.typeIdx);
+  }
   // Decode the param
   return decode_param(out, outSz, type, in, inSz, off, info, false);
 }
