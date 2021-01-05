@@ -246,8 +246,7 @@ static size_t decode_param( void * out,
   return decode_dynamic_param(out, outSz, type, in, inSz, off, szOnly);
 }
 
-// Get the amount of data that in fixed-size arrays *up to* the `idx`-th word which is *not*
-// counted in the offsets described in other words.
+// Account for data that is not included in the word offset. We term this "extra data".
 // This is pretty confusing, so please see example 7 in test.c. The 7-th word is 0x80, which is the
 // offset of the `uint[]` data. This is 128 / 32 = 4 words. This can be interpreted as skipping over
 // 3 strings (one word each in the case of ex7) and the offset word (0x80). However, if you look at the 
@@ -257,19 +256,6 @@ static size_t decode_param( void * out,
 // the offset would be the normal 4 words because those 3 elements are fixed size and do not need size descriptors
 // prefixing each element. Anyway, the weird part is that the size descriptors do not count towards offsets
 // for fixed-size, dynamic-type arrays.
-// For reference, the string[3] is termed a "fixed-size, dynamic-type array", and `string[]` is termed a
-// "variable-size, dynamic-type array", for lack of less precise names.
-// I have no idea why the protocol was designed this way, but there it is.
-static size_t get_dynamic_array_extra_sz(const ABI_t * types, size_t idx) {
-  size_t off = 0;
-  for (size_t i = 0; i < idx; i++) {
-    if (true == is_dynamic_type_fixed_sz_array(types[i])) {
-      off += ABI_WORD_SZ * types[i].arraySz;
-    }
-  }
-  return off;
-}
-
 static size_t get_dynamic_extra_data_sz(const ABI_t * types, size_t nTypes, const void * in, size_t inSz) {
   size_t off = 0;
   for (size_t i = 0; i < nTypes; i++) {
@@ -317,18 +303,7 @@ static size_t get_param_offset(const ABI_t * types, size_t idx, const void * in,
 // dynamic-type arrays elsewhere in the function.
 // This function returns the extra offset that needs to be added in order to find this type's data.
 static size_t get_extra_dynamic_offset(const ABI_t * types, size_t numTypes, const void * in, size_t inSz, ABI_t type) {
-  // NON-ARRAY DYNAMIC TYPES:
-  // Edge case for a dynamic type that is not in an array. If this type comes before and/or after
-  // dynamic-type fixed-size arrays, those types' data are *not* counted in this type's offset.
-  // However, in this edge case, the size prefixes *are* counted.
-  // Check if this edge case applies and add to the offset if it does.
-  if (true == is_dynamic_atomic_type(type) && false == is_dynamic_type_array(type))
     return get_dynamic_extra_data_sz(types, numTypes, in, inSz);
-  // ARRAY TYPES:
-  // If our type is not a single dynamic type, our data offset will still be wrong if there is
-  // one or more fixed-size dynamic-type arrays.
-  // See comment for `get_dynamic_array_extra_sz` for more information.
-  return get_dynamic_array_extra_sz(types, numTypes);
 }
 
 //===============================================
@@ -419,7 +394,6 @@ size_t abi_decode_param(void * out,
   // is of elementary type. If it is a dynamic type param, the word contains information about
   // the offset containing the raw data.
   // size_t wordOff = ABI_WORD_SZ * info.typeIdx;
-  // wordOff += get_dynamic_array_extra_sz(types, info.typeIdx);
   size_t wordOff = get_param_offset(types, info.typeIdx, in, inSz);
 
   // ELEMENTARY TYPES:
