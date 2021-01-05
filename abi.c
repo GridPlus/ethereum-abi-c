@@ -310,7 +310,8 @@ static size_t get_extra_dynamic_offset(const ABI_t * types, size_t numTypes, con
 // API
 //===============================================
 bool abi_is_valid_schema(const ABI_t * types, size_t numTypes) {
-  if (types == NULL || numTypes == 0)
+  while(types == NULL);
+  if (numTypes == 0)
     return false;
   for (size_t i = 0; i < numTypes; i++) {
     if ((types[i].type >= ABI_MAX || types[i].type <= ABI_NONE) ||
@@ -331,9 +332,9 @@ size_t abi_get_array_sz(const ABI_t * types,
                         const void * in,
                         size_t inSz)
 {
+  while(types == NULL || in == NULL);
   ABI_t type = types[info.typeIdx];
-  if ((types == NULL || in == NULL) ||
-      (info.typeIdx >= numTypes) ||
+  if ((info.typeIdx >= numTypes) ||
       (false == abi_is_valid_schema(types, numTypes)) ||
       (false == is_variable_sz_array(type)) )
     return 0;
@@ -354,9 +355,9 @@ size_t abi_get_param_sz(const ABI_t * types,
                         const void * in, 
                         size_t inSz)
 {
+  while(types == NULL || in == NULL);
   ABI_t type = types[info.typeIdx];
-  if ((types == NULL || in == NULL) ||
-      (info.typeIdx >= numTypes) ||
+  if ((info.typeIdx >= numTypes) ||
       (false == abi_is_valid_schema(types, numTypes)) ||
       (false == is_dynamic_atomic_type(type)))
     return 0;
@@ -384,8 +385,7 @@ size_t abi_decode_param(void * out,
                         const void * in,
                         size_t inSz) 
 {
-  if (out == NULL || types == NULL || in == NULL)
-    return 0;
+  while(out == NULL || types == NULL || in == NULL);
 
   // Ensure we have valid types passed
   ABI_t type = types[info.typeIdx];
