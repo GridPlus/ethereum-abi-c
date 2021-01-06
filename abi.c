@@ -311,8 +311,6 @@ static size_t get_extra_dynamic_offset(const ABI_t * types, size_t numTypes, con
 //===============================================
 bool abi_is_valid_schema(const ABI_t * types, size_t numTypes) {
   while(types == NULL);
-  if (numTypes == 0)
-    return false;
   for (size_t i = 0; i < numTypes; i++) {
     if ((types[i].type >= ABI_MAX || types[i].type <= ABI_NONE) ||
         ( (false == is_single_elementary_type(types[i])) &&
