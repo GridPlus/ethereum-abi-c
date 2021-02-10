@@ -203,4 +203,24 @@ size_t abi_decode_param(void * out,
                         const void * in,
                         size_t inSz);
 
+// Perform `abi_decode_param` on a parameter nested in a tuple struct.
+// Tuple data is encoded as if it is its own definition and is offset like dynamic data.
+// @param `out`       - output buffer to be written
+// @param `outSz`     - size of output buffer to be written
+// @param `types`     - all types in the larger ABI definition
+// @param `numTypes`  - number of types in the larger ABI definition
+// @param `tupleInfo` - information about the tuple param (i.e. one of the root params)
+// @param `paramInfo` - information about the param inside the tuple
+// @param `in`        - Buffer containin the input data
+// @param `inSz`      - Size of `in`
+// @return            - number of bytes written to `out`; 0 on error.
+size_t abi_decode_tuple_param(void * out, 
+                              size_t outSz, 
+                              const ABI_t * types, 
+                              size_t numTypes,
+                              ABISelector_t tupleInfo,
+                              ABISelector_t paramInfo, 
+                              const void * in,
+                              size_t inSz);
+
 #endif

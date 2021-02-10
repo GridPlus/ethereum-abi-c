@@ -168,7 +168,6 @@ static size_t decode_dynamic_param( void * out,
   if (off + ABI_WORD_SZ > inSz)
     return 0;
   size_t elemSz = get_abi_u32_be(in, off);
-  printf("decoding dynamic param %d\n\r", elemSz);
   off += ABI_WORD_SZ;
   // A user may only wish to know the *size* of this param (i.e. call `abi_get_param_sz`).
   // In this case we bypass the sanity checks and do NOT copy data.
@@ -179,7 +178,6 @@ static size_t decode_dynamic_param( void * out,
       return 0;
     memcpy(out, inPtr + off, elemSz);
   }
-  printf("returning %d\n\r", (int)elemSz);
   return elemSz;
 }
 
@@ -388,12 +386,11 @@ size_t abi_decode_param(void * out,
                         size_t inSz) 
 {
   while(out == NULL || types == NULL || in == NULL);
-
   // Ensure we have valid types passed
-  ABI_t type = types[info.typeIdx];
   if ((info.typeIdx >= numTypes) ||
       (false == abi_is_valid_schema(types, numTypes)))
     return 0;
+  ABI_t type = types[info.typeIdx];
 
   // Offset of the word in the encoded blob. Per ABI spec, the first `n` words correspond
   // to the function params. These words contain parameter data if the parameter in question
@@ -401,8 +398,6 @@ size_t abi_decode_param(void * out,
   // the offset containing the raw data.
   // size_t wordOff = ABI_WORD_SZ * info.typeIdx;
   size_t wordOff = get_param_offset(types, info.typeIdx, in, inSz);
-  printf("first wordOff: %d\n\r", (int)wordOff);
-
   // ELEMENTARY TYPES:
   // Elementary types are all 32 bytes long and can be easily memcopied into our output buffer.
   if (true == is_single_elementary_type(type)) {
@@ -433,11 +428,51 @@ size_t abi_decode_param(void * out,
   // We assume the index can be captured in a u32, so we only inspect the last 4 bytes
   // of the 32 byte word. We cannot realistically have payloads longer than a few kB at
   // the absolute max, so I don't see any way an offset could be larger than U32_MAX.
-  printf("wordOff: %d\n\r", (int)wordOff);
   uint32_t off = get_abi_u32_be(in, wordOff);
-  printf("off? %d\n\r", (int)off);
   off += get_extra_dynamic_offset(types, numTypes, in, inSz, type);
-printf("off2? %d\n\r", (int)off);
   // Decode the param
   return decode_param(out, outSz, type, in, inSz, off, info, false);
+}
+
+
+size_t abi_decode_tuple_param(void * out, 
+                              size_t outSz, 
+                              const ABI_t * types, 
+                              size_t numTypes,
+                              ABISelector_t tupleInfo,
+                              ABISelector_t paramInfo, 
+                              const void * in,
+                              size_t inSz) 
+{
+  while(out == NULL || types == NULL || in == NULL);
+
+  // Ensure we have valid types passed
+  if ((tupleInfo.typeIdx >= numTypes) ||
+      (false == abi_is_valid_schema(types, numTypes)))
+    return 0;
+  ABI_t tupleType = types[tupleInfo.typeIdx];
+  // Sanity check: ensure this is a tuple type
+  if (tupleType.type > ABI_TUPLE20 || tupleType.type < ABI_TUPLE1)
+    return 0;
+
+  size_t numTupleTypes = (tupleType.type - ABI_TUPLE1) + 1;
+  // Sanity check: ensure we won't overrun our buffer
+  if (paramInfo.typeIdx > numTupleTypes || paramInfo.typeIdx > numTypes)
+    return 0;
+
+  // Get the offset of the tuple data and shift our input buffer offset
+  size_t wordOff = get_param_offset(types, tupleInfo.typeIdx, in, inSz);
+  size_t dataOff = get_abi_u32_be(in, wordOff);
+  in += dataOff;
+  inSz -= dataOff;
+  // Also update types pointer offset to skip non-tuple types
+  const ABI_t * tupleTypes = types + (numTypes - numTupleTypes);
+  // TODO: Handle tuple arrays
+  return abi_decode_param(out, 
+                          outSz, 
+                          tupleTypes, 
+                          numTupleTypes,
+                          paramInfo,
+                          in,
+                          inSz);
 }
