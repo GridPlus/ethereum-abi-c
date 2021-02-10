@@ -99,6 +99,29 @@ typedef enum {
   ABI_BYTES,
   ABI_STRING,
 
+  // Tuple types - the number corresponds to the count of sub-params
+  // (Implicitly this means we only support tuples with up to 20 params)
+  ABI_TUPLE1,
+  ABI_TUPLE2,
+  ABI_TUPLE3,
+  ABI_TUPLE4,
+  ABI_TUPLE5,
+  ABI_TUPLE6,
+  ABI_TUPLE7,
+  ABI_TUPLE8,
+  ABI_TUPLE9,
+  ABI_TUPLE10,
+  ABI_TUPLE11,
+  ABI_TUPLE12,
+  ABI_TUPLE13,
+  ABI_TUPLE14,
+  ABI_TUPLE15,
+  ABI_TUPLE16,
+  ABI_TUPLE17,
+  ABI_TUPLE18,
+  ABI_TUPLE19,
+  ABI_TUPLE20,
+
   ABI_MAX,
 } ABIAtomic_t;
 

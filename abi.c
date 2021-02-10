@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <stdio.h>
+
 //===============================================
 // HELPERS
 //===============================================
@@ -166,16 +168,18 @@ static size_t decode_dynamic_param( void * out,
   if (off + ABI_WORD_SZ > inSz)
     return 0;
   size_t elemSz = get_abi_u32_be(in, off);
+  printf("decoding dynamic param %d\n\r", elemSz);
   off += ABI_WORD_SZ;
   // A user may only wish to know the *size* of this param (i.e. call `abi_get_param_sz`).
-// In this case we bypass the sanity checks and do NOT copy data.
-if (szOnly == false) {
-if (outSz < elemSz)
-return 0;
+  // In this case we bypass the sanity checks and do NOT copy data.
+  if (szOnly == false) {
+    if (outSz < elemSz)
+      return 0;
     if (off + elemSz > inSz)
       return 0;
     memcpy(out, inPtr + off, elemSz);
   }
+  printf("returning %d\n\r", (int)elemSz);
   return elemSz;
 }
 
@@ -397,6 +401,7 @@ size_t abi_decode_param(void * out,
   // the offset containing the raw data.
   // size_t wordOff = ABI_WORD_SZ * info.typeIdx;
   size_t wordOff = get_param_offset(types, info.typeIdx, in, inSz);
+  printf("first wordOff: %d\n\r", (int)wordOff);
 
   // ELEMENTARY TYPES:
   // Elementary types are all 32 bytes long and can be easily memcopied into our output buffer.
@@ -428,9 +433,11 @@ size_t abi_decode_param(void * out,
   // We assume the index can be captured in a u32, so we only inspect the last 4 bytes
   // of the 32 byte word. We cannot realistically have payloads longer than a few kB at
   // the absolute max, so I don't see any way an offset could be larger than U32_MAX.
+  printf("wordOff: %d\n\r", (int)wordOff);
   uint32_t off = get_abi_u32_be(in, wordOff);
+  printf("off? %d\n\r", (int)off);
   off += get_extra_dynamic_offset(types, numTypes, in, inSz, type);
-
+printf("off2? %d\n\r", (int)off);
   // Decode the param
   return decode_param(out, outSz, type, in, inSz, off, info, false);
 }
