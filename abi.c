@@ -228,19 +228,14 @@ static size_t decode_param( void * out,
       if (off + ABI_WORD_SZ > inSz)
         return 0;
       numElem = get_abi_u32_be(in, off);
-      off += ABI_WORD_SZ;
       // Make sure we don't overflow the buffer
       if (info.arrIdx >= numElem)
         return 0;
-      // Skip past the variable sized elements that come before the one we want to fetch.
-      for (size_t i = 0; i < info.arrIdx; i++) {
-        if (off + ABI_WORD_SZ > inSz)
-          return 0;
-        size_t nestedArrSz = get_abi_u32_be(in, off);
-        size_t numWords = 1 + (nestedArrSz / ABI_WORD_SZ);
-        // Skip the size word and all words containing this element
-        off += (1 + numWords) * ABI_WORD_SZ; 
-      }
+      // Skip past this word
+      off += ABI_WORD_SZ;
+      // Get the offset for this item and jump to it
+      size_t itemOff = get_abi_u32_be(in, off + (ABI_WORD_SZ * info.arrIdx));
+      off += itemOff;
     }
   }
   // We should now be at the offset corresponding to the size of the dynamic
@@ -430,6 +425,7 @@ size_t abi_decode_param(void * out,
   // the absolute max, so I don't see any way an offset could be larger than U32_MAX.
   uint32_t off = get_abi_u32_be(in, wordOff);
   off += get_extra_dynamic_offset(types, numTypes, in, inSz, type);
+
   // Decode the param
   return decode_param(out, outSz, type, in, inSz, off, info, false);
 }
