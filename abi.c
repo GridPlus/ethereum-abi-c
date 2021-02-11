@@ -349,3 +349,47 @@ size_t abi_get_param_sz(const ABI_t * types,
     return 0;
   return decode_param(out, outSz, types[info.typeIdx], in, inSz, paramOff, info, true);
 }
+
+size_t abi_decode_tuple_param(void * out, 
+                              size_t outSz, 
+                              const ABI_t * types, 
+                              size_t numTypes,
+                              ABISelector_t tupleInfo,
+                              ABISelector_t paramInfo, 
+                              const void * in,
+                              size_t inSz) 
+{
+  while(out == NULL || types == NULL || in == NULL);
+
+  // Ensure we have valid types passed
+  if ((tupleInfo.typeIdx >= numTypes) ||
+      (false == abi_is_valid_schema(types, numTypes)))
+    return 0;
+  ABI_t tupleType = types[tupleInfo.typeIdx];
+  // Sanity check: ensure this is a tuple type
+  if (tupleType.type > ABI_TUPLE20 || tupleType.type < ABI_TUPLE1)
+    return 0;
+
+  size_t numTupleTypes = (tupleType.type - ABI_TUPLE1) + 1;
+  // Sanity check: ensure we won't overrun our buffer
+  if (paramInfo.typeIdx > numTupleTypes || paramInfo.typeIdx > numTypes)
+    return 0;
+
+  // Get the offset of the tuple data and shift our input buffer offset
+  size_t paramOff = get_param_offset(types, numTypes, tupleInfo, in, inSz);
+  if (paramOff > inSz)
+    return 0;
+  size_t dataOff = get_abi_u32_be(in, paramOff);
+  in += dataOff;
+  inSz -= dataOff;
+  // Also update types pointer offset to skip non-tuple types
+  const ABI_t * tupleTypes = types + (numTypes - numTupleTypes);
+  // TODO: Handle tuple arrays
+  return abi_decode_param(out, 
+                          outSz, 
+                          tupleTypes, 
+                          numTupleTypes,
+                          paramInfo,
+                          in,
+                          inSz);
+}

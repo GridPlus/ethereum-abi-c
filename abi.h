@@ -99,6 +99,29 @@ typedef enum {
   ABI_BYTES,
   ABI_STRING,
 
+  // Tuple types - the number corresponds to the count of sub-params
+  // (Implicitly this means we only support tuples with up to 20 params)
+  ABI_TUPLE1,
+  ABI_TUPLE2,
+  ABI_TUPLE3,
+  ABI_TUPLE4,
+  ABI_TUPLE5,
+  ABI_TUPLE6,
+  ABI_TUPLE7,
+  ABI_TUPLE8,
+  ABI_TUPLE9,
+  ABI_TUPLE10,
+  ABI_TUPLE11,
+  ABI_TUPLE12,
+  ABI_TUPLE13,
+  ABI_TUPLE14,
+  ABI_TUPLE15,
+  ABI_TUPLE16,
+  ABI_TUPLE17,
+  ABI_TUPLE18,
+  ABI_TUPLE19,
+  ABI_TUPLE20,
+
   ABI_MAX,
 } ABIAtomic_t;
 
@@ -179,5 +202,25 @@ size_t abi_decode_param(void * out,
                         ABISelector_t info, 
                         const void * in,
                         size_t inSz);
+
+// Perform `abi_decode_param` on a parameter nested in a tuple struct.
+// Tuple data is encoded as if it is its own definition and is offset like dynamic data.
+// @param `out`       - output buffer to be written
+// @param `outSz`     - size of output buffer to be written
+// @param `types`     - all types in the larger ABI definition
+// @param `numTypes`  - number of types in the larger ABI definition
+// @param `tupleInfo` - information about the tuple param (i.e. one of the root params)
+// @param `paramInfo` - information about the param inside the tuple
+// @param `in`        - Buffer containin the input data
+// @param `inSz`      - Size of `in`
+// @return            - number of bytes written to `out`; 0 on error.
+size_t abi_decode_tuple_param(void * out, 
+                              size_t outSz, 
+                              const ABI_t * types, 
+                              size_t numTypes,
+                              ABISelector_t tupleInfo,
+                              ABISelector_t paramInfo, 
+                              const void * in,
+                              size_t inSz);
 
 #endif
