@@ -208,8 +208,8 @@ static inline void test_ex6(uint8_t * out, size_t outSz) {
 
 static inline void test_ex7(uint8_t * out, size_t outSz) {
   ABISelector_t info = { .typeIdx = 0 };
-  uint8_t * in = ex7_encoded+4;
-  size_t inSz = sizeof(ex7_encoded) - 4;
+  uint8_t * in = ex7_encoded;
+  size_t inSz = sizeof(ex7_encoded);
   printf("Example 7...");
   assert(abi_decode_param(out, outSz, ex7_abi, ARRAY_SIZE(ex7_abi), info, in, inSz) == sizeof(ex7_param_00));
   assert(0 == memcmp(ex7_param_00, out, sizeof(ex7_param_00)));
@@ -250,8 +250,8 @@ static inline void test_ex7(uint8_t * out, size_t outSz) {
 
 static inline void test_ex8(uint8_t * out, size_t outSz) {
   ABISelector_t info = { .typeIdx = 0 };
-  uint8_t * in = ex8_encoded+4;
-  size_t inSz = sizeof(ex8_encoded) - 4;
+  uint8_t * in = ex8_encoded;
+  size_t inSz = sizeof(ex8_encoded);
   printf("Example 8...");
   assert(abi_decode_param(out, outSz, ex8_abi, ARRAY_SIZE(ex8_abi), info, in, inSz) == sizeof(ex8_param_00));
   assert(0 == memcmp(ex8_param_00, out, sizeof(ex8_param_00)));
@@ -291,8 +291,8 @@ static inline void test_ex8(uint8_t * out, size_t outSz) {
 
 static inline void test_ex9(uint8_t * out, size_t outSz) {
   ABISelector_t info = { .typeIdx = 0 };
-  uint8_t * in = ex9_encoded+4;
-  size_t inSz = sizeof(ex9_encoded) - 4;
+  uint8_t * in = ex9_encoded;
+  size_t inSz = sizeof(ex9_encoded);
   printf("Example 9...");
 
   assert(abi_decode_param(out, outSz, ex9_abi, ARRAY_SIZE(ex9_abi), info, in, inSz) == sizeof(ex9_param_0));
@@ -320,8 +320,8 @@ static inline void test_ex9(uint8_t * out, size_t outSz) {
 
 static inline void test_ex10(uint8_t * out, size_t outSz) {
   ABISelector_t info = { .typeIdx = 0 };
-  uint8_t * in = ex10_encoded+4;
-  size_t inSz = sizeof(ex10_encoded) - 4;
+  uint8_t * in = ex10_encoded;
+  size_t inSz = sizeof(ex10_encoded);
   printf("Example 10...");
   assert(abi_decode_param(out, outSz, ex10_abi, ARRAY_SIZE(ex10_abi), info, in, inSz) == sizeof(ex10_param_00));
   assert(0 == memcmp(ex10_param_00, out, sizeof(ex10_param_00)));
@@ -349,8 +349,8 @@ static inline void test_ex10(uint8_t * out, size_t outSz) {
 
 static inline void test_ex11(uint8_t * out, size_t outSz) {
   ABISelector_t info = { .typeIdx = 0 };
-  uint8_t * in = ex11_encoded+4;
-  size_t inSz = sizeof(ex11_encoded) - 4;
+  uint8_t * in = ex11_encoded;
+  size_t inSz = sizeof(ex11_encoded);
   printf("Example 11...");
   assert(abi_decode_param(out, outSz, ex11_abi, ARRAY_SIZE(ex11_abi), info, in, inSz) == sizeof(ex11_param_0));
   assert(0 == memcmp(ex11_param_0, out, sizeof(ex11_param_0)));
@@ -386,8 +386,8 @@ static inline void test_ex11(uint8_t * out, size_t outSz) {
 
 static inline void test_ex12(uint8_t * out, size_t outSz) {
   ABISelector_t info = { .typeIdx = 0 };
-  uint8_t * in = ex12_encoded+4;
-  size_t inSz = sizeof(ex12_encoded) - 4;
+  uint8_t * in = ex12_encoded;
+  size_t inSz = sizeof(ex12_encoded);
   printf("Example 12...");
   assert(abi_decode_param(out, outSz, ex12_abi, ARRAY_SIZE(ex12_abi), info, in, inSz) == sizeof(ex12_param_00));
   assert(0 == memcmp(ex12_param_00, out, sizeof(ex12_param_00)));
@@ -423,8 +423,8 @@ static inline void test_ex12(uint8_t * out, size_t outSz) {
 
 static inline void test_ex13(uint8_t * out, size_t outSz) {
   ABISelector_t info = { .typeIdx = 0 };
-  uint8_t * in = ex13_encoded+4;
-  size_t inSz = sizeof(ex13_encoded) - 4;
+  uint8_t * in = ex13_encoded;
+  size_t inSz = sizeof(ex13_encoded);
   printf("Example 13...");
   assert(abi_decode_param(out, outSz, ex13_abi, ARRAY_SIZE(ex13_abi), info, in, inSz) == sizeof(ex13_param_00));
   assert(0 == memcmp(ex13_param_00, out, sizeof(ex13_param_00)));
@@ -686,15 +686,13 @@ these work
   test_ex4(out, sizeof(out));
   test_ex5(out, sizeof(out));
   test_ex6(out, sizeof(out));
-  // test_ex7(out, sizeof(out));
-  // test_ex8(out, sizeof(out));
-/*
+  test_ex7(out, sizeof(out));
+  test_ex8(out, sizeof(out));
   test_ex9(out, sizeof(out));
   test_ex10(out, sizeof(out));
-*/
-  // test_ex11(out, sizeof(out));
-  // test_ex12(out, sizeof(out));
-  // test_ex13(out, sizeof(out));
+  test_ex11(out, sizeof(out));
+  test_ex12(out, sizeof(out));
+  test_ex13(out, sizeof(out));
   test_fillOrder(out, sizeof(out));
   test_marketSellOrders(out, sizeof(out));
   // test_failures(out, sizeof(out));
