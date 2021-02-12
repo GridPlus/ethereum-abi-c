@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 //===============================================
 // HELPERS
@@ -370,7 +371,11 @@ size_t abi_decode_tuple_param(void * out,
   if (tupleType.type > ABI_TUPLE20 || tupleType.type < ABI_TUPLE1)
     return 0;
 
+  // Update types pointer offset to skip non-tuple types. This allows us to treat
+  // the tuple as its own sort of "nested" definition.
   size_t numTupleTypes = (tupleType.type - ABI_TUPLE1) + 1;
+  const ABI_t * tupleTypes = types + (numTypes - numTupleTypes);
+
   // Sanity check: ensure we won't overrun our buffer
   if (paramInfo.typeIdx > numTupleTypes || paramInfo.typeIdx > numTypes)
     return 0;
@@ -379,12 +384,30 @@ size_t abi_decode_tuple_param(void * out,
   size_t paramOff = get_param_offset(types, numTypes, tupleInfo, in, inSz);
   if (paramOff > inSz)
     return 0;
-  size_t dataOff = get_abi_u32_be(in, paramOff);
+
+  // Get the offset at which the tuple data starts
+  size_t dataOff = 0;
+  // TODO: ARE FIXED SIZE ARRAYS TREATED THE SAME WAY?
+  if (true == tupleType.isArray) {
+    // If this is an array we need to get the offset of tuple item we want
+    // The paramOff points to the tuple metadata so let's roll dataOff forward.
+    // Skip the first word here, which is the size of the tuple array
+    dataOff = paramOff + ABI_WORD_SZ;
+    // The first word here is the size of the tuple array. 
+    // Make sure we don't overrun it.
+    if (tupleInfo.arrIdx >= get_abi_u32_be(in, paramOff))
+      return 0;
+    // Now find the second offset that jumps us to the start of the tuple item we want.
+    dataOff += get_abi_u32_be(in, dataOff + (tupleInfo.arrIdx * ABI_WORD_SZ));
+  } else {
+    // For single tuple types, the header param word contains the offset of the data
+    dataOff = get_abi_u32_be(in, paramOff);
+  }
+  
+  // Jump to the start of our tuple item
   in += dataOff;
   inSz -= dataOff;
-  // Also update types pointer offset to skip non-tuple types
-  const ABI_t * tupleTypes = types + (numTypes - numTupleTypes);
-  // TODO: Handle tuple arrays
+
   return abi_decode_param(out, 
                           outSz, 
                           tupleTypes, 

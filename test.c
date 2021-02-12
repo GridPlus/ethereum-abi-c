@@ -464,169 +464,290 @@ static inline void test_fillOrder(uint8_t * out, size_t outSz) {
 
   // Tuple types
   info.typeIdx = 0;
-  ABISelector_t tupleInfo = { .typeIdx = 0 };
+  ABISelector_t paramInfo = { .typeIdx = 0 };
   size_t decSz;
   decSz = abi_decode_tuple_param( out, outSz, fillOrder_abi, ARRAY_SIZE(fillOrder_abi), 
-                                  info, tupleInfo, in, inSz);
+                                  info, paramInfo, in, inSz);
   assert(decSz == sizeof(fillOrder_p0_t0));
   assert(0 == memcmp(fillOrder_p0_t0, out, decSz));
 
-  tupleInfo.typeIdx = 1;
+  paramInfo.typeIdx = 1;
   decSz = abi_decode_tuple_param( out, outSz, fillOrder_abi, ARRAY_SIZE(fillOrder_abi), 
-                                  info, tupleInfo, in, inSz);
+                                  info, paramInfo, in, inSz);
   assert(decSz == sizeof(fillOrder_p0_t1));
   assert(0 == memcmp(fillOrder_p0_t1, out, decSz));
 
-  tupleInfo.typeIdx = 2;
+  paramInfo.typeIdx = 2;
   decSz = abi_decode_tuple_param( out, outSz, fillOrder_abi, ARRAY_SIZE(fillOrder_abi), 
-                                  info, tupleInfo, in, inSz);
+                                  info, paramInfo, in, inSz);
   assert(decSz == sizeof(fillOrder_p0_t2));
   assert(0 == memcmp(fillOrder_p0_t2, out, decSz));
   
-  tupleInfo.typeIdx = 3;
+  paramInfo.typeIdx = 3;
   decSz = abi_decode_tuple_param( out, outSz, fillOrder_abi, ARRAY_SIZE(fillOrder_abi), 
-                                  info, tupleInfo, in, inSz);
+                                  info, paramInfo, in, inSz);
   assert(decSz == sizeof(fillOrder_p0_t3));
   assert(0 == memcmp(fillOrder_p0_t3, out, decSz));
   
-  tupleInfo.typeIdx = 4;
+  paramInfo.typeIdx = 4;
   decSz = abi_decode_tuple_param( out, outSz, fillOrder_abi, ARRAY_SIZE(fillOrder_abi), 
-                                  info, tupleInfo, in, inSz);
+                                  info, paramInfo, in, inSz);
   assert(decSz == sizeof(fillOrder_p0_t4));
   assert(0 == memcmp(fillOrder_p0_t4, out, decSz));
   
-  tupleInfo.typeIdx = 5;
+  paramInfo.typeIdx = 5;
   decSz = abi_decode_tuple_param( out, outSz, fillOrder_abi, ARRAY_SIZE(fillOrder_abi), 
-                                  info, tupleInfo, in, inSz);
+                                  info, paramInfo, in, inSz);
   assert(decSz == sizeof(fillOrder_p0_t5));
   assert(0 == memcmp(fillOrder_p0_t5, out, decSz));
 
-  tupleInfo.typeIdx = 6;
+  paramInfo.typeIdx = 6;
   decSz = abi_decode_tuple_param( out, outSz, fillOrder_abi, ARRAY_SIZE(fillOrder_abi), 
-                                  info, tupleInfo, in, inSz);
+                                  info, paramInfo, in, inSz);
   assert(decSz == sizeof(fillOrder_p0_t6));
   assert(0 == memcmp(fillOrder_p0_t6, out, decSz));
 
-  tupleInfo.typeIdx = 7;
+  paramInfo.typeIdx = 7;
   decSz = abi_decode_tuple_param( out, outSz, fillOrder_abi, ARRAY_SIZE(fillOrder_abi), 
-                                  info, tupleInfo, in, inSz);
+                                  info, paramInfo, in, inSz);
   assert(decSz == sizeof(fillOrder_p0_t7));
   assert(0 == memcmp(fillOrder_p0_t7, out, decSz));
 
-  tupleInfo.typeIdx = 8;
+  paramInfo.typeIdx = 8;
   decSz = abi_decode_tuple_param( out, outSz, fillOrder_abi, ARRAY_SIZE(fillOrder_abi), 
-                                  info, tupleInfo, in, inSz);
+                                  info, paramInfo, in, inSz);
   assert(decSz == sizeof(fillOrder_p0_t8));
   assert(0 == memcmp(fillOrder_p0_t8, out, decSz));
 
-  tupleInfo.typeIdx = 9;
+  paramInfo.typeIdx = 9;
   decSz = abi_decode_tuple_param( out, outSz, fillOrder_abi, ARRAY_SIZE(fillOrder_abi), 
-                                  info, tupleInfo, in, inSz);
+                                  info, paramInfo, in, inSz);
   assert(decSz == sizeof(fillOrder_p0_t9));
   assert(0 == memcmp(fillOrder_p0_t9, out, decSz));
 
-  tupleInfo.typeIdx = 10;
+  paramInfo.typeIdx = 10;
   decSz = abi_decode_tuple_param( out, outSz, fillOrder_abi, ARRAY_SIZE(fillOrder_abi), 
-                                  info, tupleInfo, in, inSz);
+                                  info, paramInfo, in, inSz);
   assert(decSz == sizeof(fillOrder_p0_t10));
   assert(0 == memcmp(fillOrder_p0_t10, out, decSz));
 
-  tupleInfo.typeIdx = 11;
+  paramInfo.typeIdx = 11;
   decSz = abi_decode_tuple_param( out, outSz, fillOrder_abi, ARRAY_SIZE(fillOrder_abi), 
-                                  info, tupleInfo, in, inSz);
+                                  info, paramInfo, in, inSz);
   assert(decSz == sizeof(fillOrder_p0_t11));
   assert(0 == memcmp(fillOrder_p0_t11, out, decSz));
 
   printf("passed.\n\r");
 }
 
-
 static inline void test_marketSellOrders(uint8_t * out, size_t outSz) {
-  ABISelector_t info = { .typeIdx = 0 };
+  ABISelector_t tupleInfo = { .typeIdx = 0 };
   uint8_t * in = marketSellOrders_encoded+4;
   size_t inSz = sizeof(marketSellOrders_encoded) - 4;
   printf("(Tuple) marketSellOrders...");
 
   // Non-tuple params
-  info.typeIdx = 1;
-  assert(abi_decode_param(out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), info, in, inSz) == sizeof(marketSellOrders_p1));
+  tupleInfo.typeIdx = 1;
+  assert(abi_decode_param(out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
+                          tupleInfo, in, inSz) == sizeof(marketSellOrders_p1));
   assert(0 == memcmp(marketSellOrders_p1, out, sizeof(marketSellOrders_p1)));
   memset(out, 0, outSz);
-  info.typeIdx = 2;
-  info.arrIdx = 0;
+  tupleInfo.typeIdx = 2;
+  tupleInfo.arrIdx = 0;
 
-size_t tst = abi_decode_param(out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), info, in, inSz);
-  // assert(abi_decode_param(out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), info, in, inSz) == sizeof(marketSellOrders_p2_0));
-  // assert(0 == memcmp(marketSellOrders_p2_0, out, sizeof(marketSellOrders_p2_0)));
-  // memset(out, 0, outSz);
-/*
+  assert(abi_decode_param(out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
+                          tupleInfo, in, inSz) == sizeof(marketSellOrders_p2_0));
+  assert(0 == memcmp(marketSellOrders_p2_0, out, sizeof(marketSellOrders_p2_0)));
+  memset(out, 0, outSz);
+
   // Tuple types
-  info.typeIdx = 0;
-  ABISelector_t tupleInfo = { .typeIdx = 0 };
+  tupleInfo.typeIdx = 0;
+  ABISelector_t paramInfo = { .typeIdx = 0 };
   size_t decSz;
   decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
-                                  info, tupleInfo, in, inSz);
-  assert(decSz == sizeof(marketSellOrders_p0_t0));
-  assert(0 == memcmp(marketSellOrders_p0_t0, out, decSz));
-  tupleInfo.typeIdx = 1;
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t0_p0));
+  assert(0 == memcmp(marketSellOrders_p0_t0_p0, out, decSz));
+  paramInfo.typeIdx = 1;
   decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
-                                  info, tupleInfo, in, inSz);
-  assert(decSz == sizeof(marketSellOrders_p0_t1));
-  assert(0 == memcmp(marketSellOrders_p0_t1, out, decSz));
-  tupleInfo.typeIdx = 2;
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t0_p1));
+  assert(0 == memcmp(marketSellOrders_p0_t0_p1, out, decSz));
+  paramInfo.typeIdx = 2;
   decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
-                                  info, tupleInfo, in, inSz);
-  assert(decSz == sizeof(marketSellOrders_p0_t2));
-  assert(0 == memcmp(marketSellOrders_p0_t2, out, decSz));
-  
-  tupleInfo.typeIdx = 3;
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t0_p2));
+  assert(0 == memcmp(marketSellOrders_p0_t0_p2, out, decSz));
+  paramInfo.typeIdx = 3;
   decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
-                                  info, tupleInfo, in, inSz);
-  assert(decSz == sizeof(marketSellOrders_p0_t3));
-  assert(0 == memcmp(marketSellOrders_p0_t3, out, decSz));
-  
-  tupleInfo.typeIdx = 4;
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t0_p3));
+  assert(0 == memcmp(marketSellOrders_p0_t0_p3, out, decSz));
+  paramInfo.typeIdx = 4;
   decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
-                                  info, tupleInfo, in, inSz);
-  assert(decSz == sizeof(marketSellOrders_p0_t4));
-  assert(0 == memcmp(marketSellOrders_p0_t4, out, decSz));
-  
-  tupleInfo.typeIdx = 5;
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t0_p4));
+  assert(0 == memcmp(marketSellOrders_p0_t0_p4, out, decSz));
+  paramInfo.typeIdx = 5;
   decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
-                                  info, tupleInfo, in, inSz);
-  assert(decSz == sizeof(marketSellOrders_p0_t5));
-  assert(0 == memcmp(marketSellOrders_p0_t5, out, decSz));
-  tupleInfo.typeIdx = 6;
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t0_p5));
+  assert(0 == memcmp(marketSellOrders_p0_t0_p5, out, decSz));
+  paramInfo.typeIdx = 6;
   decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
-                                  info, tupleInfo, in, inSz);
-  assert(decSz == sizeof(marketSellOrders_p0_t6));
-  assert(0 == memcmp(marketSellOrders_p0_t6, out, decSz));
-  tupleInfo.typeIdx = 7;
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t0_p6));
+  assert(0 == memcmp(marketSellOrders_p0_t0_p6, out, decSz));
+  paramInfo.typeIdx = 7;
   decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
-                                  info, tupleInfo, in, inSz);
-  assert(decSz == sizeof(marketSellOrders_p0_t7));
-  assert(0 == memcmp(marketSellOrders_p0_t7, out, decSz));
-  tupleInfo.typeIdx = 8;
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t0_p7));
+  assert(0 == memcmp(marketSellOrders_p0_t0_p7, out, decSz));
+  paramInfo.typeIdx = 8;
   decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
-                                  info, tupleInfo, in, inSz);
-  assert(decSz == sizeof(marketSellOrders_p0_t8));
-  assert(0 == memcmp(marketSellOrders_p0_t8, out, decSz));
-  tupleInfo.typeIdx = 9;
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t0_p8));
+  assert(0 == memcmp(marketSellOrders_p0_t0_p8, out, decSz));
+  paramInfo.typeIdx = 9;
   decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
-                                  info, tupleInfo, in, inSz);
-  assert(decSz == sizeof(marketSellOrders_p0_t9));
-  assert(0 == memcmp(marketSellOrders_p0_t9, out, decSz));
-  tupleInfo.typeIdx = 10;
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t0_p9));
+  assert(0 == memcmp(marketSellOrders_p0_t0_p9, out, decSz));
+  paramInfo.typeIdx = 10;
   decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
-                                  info, tupleInfo, in, inSz);
-  assert(decSz == sizeof(marketSellOrders_p0_t10));
-  assert(0 == memcmp(marketSellOrders_p0_t10, out, decSz));
-  tupleInfo.typeIdx = 11;
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t0_p10));
+  assert(0 == memcmp(marketSellOrders_p0_t0_p10, out, decSz));
+  paramInfo.typeIdx = 11;
   decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
-                                  info, tupleInfo, in, inSz);
-  assert(decSz == sizeof(marketSellOrders_p0_t11));
-  assert(0 == memcmp(marketSellOrders_p0_t11, out, decSz));
-*/
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t0_p11));
+  assert(0 == memcmp(marketSellOrders_p0_t0_p11, out, decSz));
+
+  tupleInfo.arrIdx = 1;
+  paramInfo.typeIdx = 0;
+  decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t1_p0));
+  assert(0 == memcmp(marketSellOrders_p0_t1_p0, out, decSz));
+  paramInfo.typeIdx = 1;
+  decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t1_p1));
+  assert(0 == memcmp(marketSellOrders_p0_t1_p1, out, decSz));
+  paramInfo.typeIdx = 2;
+  decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t1_p2));
+  assert(0 == memcmp(marketSellOrders_p0_t1_p2, out, decSz));
+  paramInfo.typeIdx = 3;
+  decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t1_p3));
+  assert(0 == memcmp(marketSellOrders_p0_t1_p3, out, decSz));
+  paramInfo.typeIdx = 4;
+  decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t1_p4));
+  assert(0 == memcmp(marketSellOrders_p0_t1_p4, out, decSz));
+  paramInfo.typeIdx = 5;
+  decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t1_p5));
+  assert(0 == memcmp(marketSellOrders_p0_t1_p5, out, decSz));
+  paramInfo.typeIdx = 6;
+  decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t1_p6));
+  assert(0 == memcmp(marketSellOrders_p0_t1_p6, out, decSz));
+  paramInfo.typeIdx = 7;
+  decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t1_p7));
+  assert(0 == memcmp(marketSellOrders_p0_t1_p7, out, decSz));
+  paramInfo.typeIdx = 8;
+  decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t1_p8));
+  assert(0 == memcmp(marketSellOrders_p0_t1_p8, out, decSz));
+  paramInfo.typeIdx = 9;
+  decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t1_p9));
+  assert(0 == memcmp(marketSellOrders_p0_t1_p9, out, decSz));
+  paramInfo.typeIdx = 10;
+  decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t1_p10));
+  assert(0 == memcmp(marketSellOrders_p0_t1_p10, out, decSz));
+  paramInfo.typeIdx = 11;
+  decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t1_p11));
+  assert(0 == memcmp(marketSellOrders_p0_t1_p11, out, decSz));
+
+  tupleInfo.arrIdx = 2;
+  paramInfo.typeIdx = 0;
+  decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t2_p0));
+  assert(0 == memcmp(marketSellOrders_p0_t2_p0, out, decSz));
+  paramInfo.typeIdx = 1;
+  decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t2_p1));
+  assert(0 == memcmp(marketSellOrders_p0_t2_p1, out, decSz));
+  paramInfo.typeIdx = 2;
+  decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t2_p2));
+  assert(0 == memcmp(marketSellOrders_p0_t2_p2, out, decSz));
+  paramInfo.typeIdx = 3;
+  decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t2_p3));
+  assert(0 == memcmp(marketSellOrders_p0_t2_p3, out, decSz));
+  paramInfo.typeIdx = 4;
+  decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t2_p4));
+  assert(0 == memcmp(marketSellOrders_p0_t2_p4, out, decSz));
+  paramInfo.typeIdx = 5;
+  decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t2_p5));
+  assert(0 == memcmp(marketSellOrders_p0_t2_p5, out, decSz));
+  paramInfo.typeIdx = 6;
+  decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t2_p6));
+  assert(0 == memcmp(marketSellOrders_p0_t2_p6, out, decSz));
+  paramInfo.typeIdx = 7;
+  decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t2_p7));
+  assert(0 == memcmp(marketSellOrders_p0_t2_p7, out, decSz));
+  paramInfo.typeIdx = 8;
+  decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t2_p8));
+  assert(0 == memcmp(marketSellOrders_p0_t2_p8, out, decSz));
+  paramInfo.typeIdx = 9;
+  decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t2_p9));
+  assert(0 == memcmp(marketSellOrders_p0_t2_p9, out, decSz));
+  paramInfo.typeIdx = 10;
+  decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t2_p10));
+  assert(0 == memcmp(marketSellOrders_p0_t2_p10, out, decSz));
+  paramInfo.typeIdx = 11;
+  decSz = abi_decode_tuple_param( out, outSz, marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi), 
+                                  tupleInfo, paramInfo, in, inSz);
+  assert(decSz == sizeof(marketSellOrders_p0_t2_p11));
+  assert(0 == memcmp(marketSellOrders_p0_t2_p11, out, decSz));
+
   printf("passed.\n\r");
 }
 
