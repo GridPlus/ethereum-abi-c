@@ -168,21 +168,6 @@ size_t abi_get_array_sz(const ABI_t * types,
                         const void * in,
                         size_t inSz);
 
-// Get the element size of a particular parameter whose type is dynamic.
-// This is equivalent to `abi_decode_param`, but does not copy data to an output
-// buffer and only works with dynamic types.
-// @param `types`     - array of ABI type definitions
-// @param `numTypes`  - the number of types in this ABI definition
-// @param `info`      - information about the data to be selected
-// @param `in`        - Buffer containin the input data
-// @param `inSz`      - Size of `in`
-// @return            - number of bytes written to `out`; 0 on error.
-size_t abi_get_param_sz(const ABI_t * types, 
-                        size_t numTypes, 
-                        ABISelector_t info, 
-                        const void * in, 
-                        size_t inSz);
-
 // Decode and return a param's data in `out` given a set of ABI types and an `in` buffer.
 // Note that padding is stripped from elementary types, which are encoded in 32-byte words regardless
 // of the underlying data size. For example, a single ABI_BOOL would be the last byte of a

@@ -10,12 +10,12 @@
 // TESTS
 //===============================================================
 
-// static void print_data(uint8_t * in, size_t sz) {
-//   for (size_t i = 0; i < sz; i++) {
-//     printf("0x%x, ", in[i]);
-//   }
-//   printf("\n\r");
-// }
+static void print_data(uint8_t * in, size_t sz) {
+  for (size_t i = 0; i < sz; i++) {
+    printf("0x%x, ", in[i]);
+  }
+  printf("\n\r");
+}
 
 static inline uint32_t get_u32_be(uint8_t * in, size_t off) {
   return (in[off + 3] | in[off + 2] << 8 | in[off + 1] << 16 | in[off + 0] << 24);
@@ -189,16 +189,6 @@ static inline void test_ex6(uint8_t * out, size_t outSz) {
   assert(0 == memcmp(ex6_param_20, out, sizeof(ex6_param_20)));
   memset(out, 0, outSz);
 
-  // Validate param sizes
-  info.typeIdx = 0;
-  info.arrIdx = 0;
-  assert(abi_get_param_sz(ex6_abi, ARRAY_SIZE(ex6_abi), info, in, inSz) == ARRAY_SIZE(ex6_param_00));
-  info.arrIdx = 1;
-  assert(abi_get_param_sz(ex6_abi, ARRAY_SIZE(ex6_abi), info, in, inSz) == ARRAY_SIZE(ex6_param_01));
-  info.typeIdx = 2;
-  info.arrIdx = 0;
-  assert(abi_get_param_sz(ex6_abi, ARRAY_SIZE(ex6_abi), info, in, inSz) == ARRAY_SIZE(ex6_param_20));
-
   // Validate array size
   info.typeIdx = 1;
   assert(abi_get_array_sz(ex6_abi, ARRAY_SIZE(ex6_abi), info, in, inSz) == 3);
@@ -233,15 +223,6 @@ static inline void test_ex7(uint8_t * out, size_t outSz) {
   assert(0 == memcmp(ex7_param_11, out, sizeof(ex7_param_11)));
   memset(out, 0, outSz);
 
-  // Validate param sizes
-  info.typeIdx = 0;
-  info.arrIdx = 0;
-  assert(abi_get_param_sz(ex7_abi, ARRAY_SIZE(ex7_abi), info, in, inSz) == ARRAY_SIZE(ex7_param_00));
-  info.arrIdx = 1;
-  assert(abi_get_param_sz(ex7_abi, ARRAY_SIZE(ex7_abi), info, in, inSz) == ARRAY_SIZE(ex7_param_01));
-  info.arrIdx = 2;
-  assert(abi_get_param_sz(ex7_abi, ARRAY_SIZE(ex7_abi), info, in, inSz) == ARRAY_SIZE(ex7_param_02));
-
   // Validate array size
   info.typeIdx = 1;
   assert(abi_get_array_sz(ex7_abi, ARRAY_SIZE(ex7_abi), info, in, inSz) == 2);
@@ -274,16 +255,9 @@ static inline void test_ex8(uint8_t * out, size_t outSz) {
   assert(0 == memcmp(ex8_param_11, out, sizeof(ex8_param_11)));
   memset(out, 0, outSz);
 
-  // Validate param sizes
-  info.typeIdx = 0;
-  info.arrIdx = 0;
-  assert(abi_get_param_sz(ex8_abi, ARRAY_SIZE(ex8_abi), info, in, inSz) == ARRAY_SIZE(ex8_param_00));
-  info.arrIdx = 1;
-  assert(abi_get_param_sz(ex8_abi, ARRAY_SIZE(ex8_abi), info, in, inSz) == ARRAY_SIZE(ex8_param_01));
-  info.arrIdx = 2;
-  assert(abi_get_param_sz(ex8_abi, ARRAY_SIZE(ex8_abi), info, in, inSz) == ARRAY_SIZE(ex8_param_02));
-
   // Validate array size
+  info.typeIdx = 0;
+  info.arrIdx = 2;
   assert(abi_get_array_sz(ex8_abi, ARRAY_SIZE(ex8_abi), info, in, inSz) == 3);
 
   printf("passed.\n\r");
@@ -354,7 +328,6 @@ static inline void test_ex11(uint8_t * out, size_t outSz) {
   printf("Example 11...");
   assert(abi_decode_param(out, outSz, ex11_abi, ARRAY_SIZE(ex11_abi), info, in, inSz) == sizeof(ex11_param_0));
   assert(0 == memcmp(ex11_param_0, out, sizeof(ex11_param_0)));
-  assert(abi_get_param_sz(ex11_abi, ARRAY_SIZE(ex11_abi), info, in, inSz) == ARRAY_SIZE(ex11_param_0));
   memset(out, 0, outSz);
   info.typeIdx = 1;
   assert(abi_decode_param(out, outSz, ex11_abi, ARRAY_SIZE(ex11_abi), info, in, inSz) == sizeof(ex11_param_10));
@@ -404,7 +377,6 @@ static inline void test_ex12(uint8_t * out, size_t outSz) {
   info.arrIdx = 0;
   assert(abi_decode_param(out, outSz, ex12_abi, ARRAY_SIZE(ex12_abi), info, in, inSz) == sizeof(ex12_param_1));
   assert(0 == memcmp(ex12_param_1, out, sizeof(ex12_param_1)));
-  assert(abi_get_param_sz(ex12_abi, ARRAY_SIZE(ex12_abi), info, in, inSz) == ARRAY_SIZE(ex12_param_1));
   memset(out, 0, outSz);
   info.typeIdx = 2;
   assert(abi_decode_param(out, outSz, ex12_abi, ARRAY_SIZE(ex12_abi), info, in, inSz) == sizeof(ex12_param_2));
@@ -441,7 +413,6 @@ static inline void test_ex13(uint8_t * out, size_t outSz) {
   info.arrIdx = 1;
   assert(abi_decode_param(out, outSz, ex13_abi, ARRAY_SIZE(ex13_abi), info, in, inSz) == sizeof(ex13_param_11));
   assert(0 == memcmp(ex13_param_11, out, sizeof(ex13_param_11)));
-  assert(abi_get_param_sz(ex13_abi, ARRAY_SIZE(ex13_abi), info, in, inSz) == ARRAY_SIZE(ex13_param_11));
   memset(out, 0, outSz);
   printf("passed.\n\r");
 }
@@ -751,6 +722,224 @@ static inline void test_marketSellOrders(uint8_t * out, size_t outSz) {
   printf("passed.\n\r");
 }
 
+static inline void test_tupleElementary(uint8_t * out, size_t outSz) {
+  ABISelector_t info = { .typeIdx = 0 };
+  uint8_t * in = tupleElementary_encoded;
+  size_t inSz = sizeof(tupleElementary_encoded);
+  printf("(Tuple) tupleElementary_encoded...");
+
+  // Non-tuple params
+  assert( abi_decode_param(out, outSz, tupleElementary_abi, ARRAY_SIZE(tupleElementary_abi), 
+          info, in, inSz) == sizeof(tupleElementary_p0));
+  assert(0 == memcmp(tupleElementary_p0, out, sizeof(tupleElementary_p0)));
+  memset(out, 0, outSz);
+  info.typeIdx = 2;
+  assert( abi_decode_param(out, outSz, tupleElementary_abi, ARRAY_SIZE(tupleElementary_abi), 
+          info, in, inSz) == sizeof(tupleElementary_p2));
+  assert(0 == memcmp(tupleElementary_p2, out, sizeof(tupleElementary_p2)));
+  memset(out, 0, outSz);
+
+  // Tuple params
+  info.typeIdx = 1;
+  ABISelector_t paramInfo = { .typeIdx = 0 };
+  assert( abi_decode_tuple_param(out, outSz, tupleElementary_abi, ARRAY_SIZE(tupleElementary_abi), 
+          info, paramInfo, in, inSz) == sizeof(tupleElementary_p1_t0_p0));
+  assert(0 == memcmp(tupleElementary_p1_t0_p0, out, sizeof(tupleElementary_p1_t0_p0)));
+  memset(out, 0, outSz);
+  paramInfo.typeIdx = 1;
+  assert( abi_decode_tuple_param(out, outSz, tupleElementary_abi, ARRAY_SIZE(tupleElementary_abi), 
+          info, paramInfo, in, inSz) == sizeof(tupleElementary_p1_t0_p1));
+  assert(0 == memcmp(tupleElementary_p1_t0_p1, out, sizeof(tupleElementary_p1_t0_p1)));
+  memset(out, 0, outSz);
+  printf("passed.\n\r");
+}
+
+
+static inline void test_tupleFixedArray0(uint8_t * out, size_t outSz) {
+  ABISelector_t info = { .typeIdx = 0 };
+  uint8_t * in = tupleFixedArray0_encoded;
+  size_t inSz = sizeof(tupleFixedArray0_encoded);
+  printf("(Tuple) tupleFixedArray0_encoded...");
+
+  // Non-tuple params
+  assert( abi_decode_param(out, outSz, tupleFixedArray0_abi, ARRAY_SIZE(tupleFixedArray0_abi), 
+          info, in, inSz) == sizeof(tupleFixedArray0_p0));
+  assert(0 == memcmp(tupleFixedArray0_p0, out, sizeof(tupleFixedArray0_p0)));
+  memset(out, 0, outSz);
+  info.typeIdx = 2;
+  assert( abi_decode_param(out, outSz, tupleFixedArray0_abi, ARRAY_SIZE(tupleFixedArray0_abi), 
+          info, in, inSz) == sizeof(tupleFixedArray0_p2_0));
+  assert(0 == memcmp(tupleFixedArray0_p2_0, out, sizeof(tupleFixedArray0_p2_0)));
+  memset(out, 0, outSz);
+
+  // Tuple types
+  info.typeIdx = 1;
+  ABISelector_t paramInfo = { .typeIdx = 0 };
+  size_t decSz;
+  decSz = abi_decode_tuple_param( out, outSz, tupleFixedArray0_abi, ARRAY_SIZE(tupleFixedArray0_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleFixedArray0_p1_t0_p0));
+  assert(0 == memcmp(tupleFixedArray0_p1_t0_p0, out, decSz));
+  paramInfo.typeIdx = 1;
+  decSz = abi_decode_tuple_param( out, outSz, tupleFixedArray0_abi, ARRAY_SIZE(tupleFixedArray0_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleFixedArray0_p1_t0_p1));
+  assert(0 == memcmp(tupleFixedArray0_p1_t0_p1, out, decSz));
+  info.arrIdx = 1;
+  paramInfo.typeIdx = 0;
+  decSz = abi_decode_tuple_param( out, outSz, tupleFixedArray0_abi, ARRAY_SIZE(tupleFixedArray0_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleFixedArray0_p1_t1_p0));
+  assert(0 == memcmp(tupleFixedArray0_p1_t1_p0, out, decSz));
+  paramInfo.typeIdx = 1;
+  decSz = abi_decode_tuple_param( out, outSz, tupleFixedArray0_abi, ARRAY_SIZE(tupleFixedArray0_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleFixedArray0_p1_t1_p1));
+  assert(0 == memcmp(tupleFixedArray0_p1_t1_p1, out, decSz));
+
+  printf("passed.\n\r");
+}
+
+static inline void test_tupleFixedArray1(uint8_t * out, size_t outSz) {
+  ABISelector_t info = { .typeIdx = 0 };
+  uint8_t * in = tupleFixedArray1_encoded;
+  size_t inSz = sizeof(tupleFixedArray1_encoded);
+  printf("(Tuple) tupleFixedArray1_encoded...");
+  size_t decSz;
+
+  // Non-tuple params
+  decSz = abi_decode_param( out, outSz, tupleFixedArray1_abi, ARRAY_SIZE(tupleFixedArray1_abi), 
+                            info, in, inSz);
+  assert(decSz == sizeof(tupleFixedArray1_p0));
+  assert(0 == memcmp(tupleFixedArray1_p0, out, sizeof(tupleFixedArray1_p0)));
+  memset(out, 0, outSz);
+  info.typeIdx = 2;
+  assert( abi_decode_param(out, outSz, tupleFixedArray1_abi, ARRAY_SIZE(tupleFixedArray1_abi), 
+          info, in, inSz) == sizeof(tupleFixedArray1_p2));
+  assert(0 == memcmp(tupleFixedArray1_p2, out, sizeof(tupleFixedArray1_p2)));
+  memset(out, 0, outSz);
+
+  // Tuple types
+  info.typeIdx = 1;
+  ABISelector_t paramInfo = { .typeIdx = 0 };
+  decSz = abi_decode_tuple_param( out, outSz, tupleFixedArray1_abi, ARRAY_SIZE(tupleFixedArray1_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleFixedArray1_p1_t0_p0));
+  assert(0 == memcmp(tupleFixedArray1_p1_t0_p0, out, decSz));
+  paramInfo.typeIdx = 1;
+  decSz = abi_decode_tuple_param( out, outSz, tupleFixedArray1_abi, ARRAY_SIZE(tupleFixedArray1_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleFixedArray1_p1_t0_p1));
+  assert(0 == memcmp(tupleFixedArray1_p1_t0_p1, out, decSz));
+  info.arrIdx = 1;
+  paramInfo.typeIdx = 0;
+  decSz = abi_decode_tuple_param( out, outSz, tupleFixedArray1_abi, ARRAY_SIZE(tupleFixedArray1_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleFixedArray1_p1_t1_p0));
+  assert(0 == memcmp(tupleFixedArray1_p1_t1_p0, out, decSz));
+  paramInfo.typeIdx = 1;
+  decSz = abi_decode_tuple_param( out, outSz, tupleFixedArray1_abi, ARRAY_SIZE(tupleFixedArray1_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleFixedArray1_p1_t1_p1));
+  assert(0 == memcmp(tupleFixedArray1_p1_t1_p1, out, decSz));
+
+  printf("passed.\n\r");
+}
+
+static inline void test_tupleVarArray0(uint8_t * out, size_t outSz) {
+  ABISelector_t info = { .typeIdx = 0 };
+  uint8_t * in = tupleVarArray0_encoded;
+  size_t inSz = sizeof(tupleVarArray0_encoded);
+  printf("(Tuple) tupleVarArray0_encoded...");
+  size_t decSz;
+
+  // Non-tuple params
+  decSz = abi_decode_param( out, outSz, tupleVarArray0_abi, ARRAY_SIZE(tupleVarArray0_abi), 
+                            info, in, inSz);
+  assert(decSz == sizeof(tupleVarArray0_p0));
+  assert(0 == memcmp(tupleVarArray0_p0, out, sizeof(tupleVarArray0_p0)));
+  memset(out, 0, outSz);
+  info.typeIdx = 2;
+  decSz = abi_decode_param( out, outSz, tupleVarArray0_abi, ARRAY_SIZE(tupleVarArray0_abi), 
+                            info, in, inSz);
+  assert(decSz == sizeof(tupleVarArray0_p2));
+  assert(0 == memcmp(tupleVarArray0_p2, out, sizeof(tupleVarArray0_p2)));
+  memset(out, 0, outSz);
+
+  // Tuple types
+  info.typeIdx = 1;
+  ABISelector_t paramInfo = { .typeIdx = 0 };
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray0_abi, ARRAY_SIZE(tupleVarArray0_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray0_p1_t0_p0));
+  assert(0 == memcmp(tupleVarArray0_p1_t0_p0, out, decSz));
+  paramInfo.typeIdx = 1;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray0_abi, ARRAY_SIZE(tupleVarArray0_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray0_p1_t0_p1));
+  assert(0 == memcmp(tupleVarArray0_p1_t0_p1, out, decSz));
+  info.arrIdx = 1;
+  paramInfo.typeIdx = 0;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray0_abi, ARRAY_SIZE(tupleVarArray0_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray0_p1_t1_p0));
+  assert(0 == memcmp(tupleVarArray0_p1_t1_p0, out, decSz));
+  paramInfo.typeIdx = 1;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray0_abi, ARRAY_SIZE(tupleVarArray0_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray0_p1_t1_p1));
+  assert(0 == memcmp(tupleVarArray0_p1_t1_p1, out, decSz));
+
+  printf("passed.\n\r");
+}
+
+static inline void test_tupleVarArray1(uint8_t * out, size_t outSz) {
+  ABISelector_t info = { .typeIdx = 0 };
+  uint8_t * in = tupleVarArray1_encoded;
+  size_t inSz = sizeof(tupleVarArray1_encoded);
+  printf("(Tuple) tupleVarArray1_encoded...");
+  size_t decSz;
+
+  // Non-tuple params
+  decSz = abi_decode_param( out, outSz, tupleVarArray1_abi, ARRAY_SIZE(tupleVarArray1_abi), 
+                            info, in, inSz);
+  assert(decSz == sizeof(tupleVarArray1_p0));
+  assert(0 == memcmp(tupleVarArray1_p0, out, sizeof(tupleVarArray1_p0)));
+  memset(out, 0, outSz);
+  info.typeIdx = 2;
+  decSz = abi_decode_param( out, outSz, tupleVarArray1_abi, ARRAY_SIZE(tupleVarArray1_abi), 
+                            info, in, inSz);
+  assert(decSz == sizeof(tupleVarArray1_p2));
+  assert(0 == memcmp(tupleVarArray1_p2, out, sizeof(tupleVarArray1_p2)));
+  memset(out, 0, outSz);
+
+  // Tuple types
+  info.typeIdx = 1;
+  ABISelector_t paramInfo = { .typeIdx = 0 };
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray1_abi, ARRAY_SIZE(tupleVarArray1_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray1_p1_t0_p0));
+  assert(0 == memcmp(tupleVarArray1_p1_t0_p0, out, decSz));
+  paramInfo.typeIdx = 1;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray1_abi, ARRAY_SIZE(tupleVarArray1_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray1_p1_t0_p1));
+  assert(0 == memcmp(tupleVarArray1_p1_t0_p1, out, decSz));
+  info.arrIdx = 1;
+  paramInfo.typeIdx = 0;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray1_abi, ARRAY_SIZE(tupleVarArray1_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray1_p1_t1_p0));
+  assert(0 == memcmp(tupleVarArray1_p1_t1_p0, out, decSz));
+  paramInfo.typeIdx = 1;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray1_abi, ARRAY_SIZE(tupleVarArray1_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray1_p1_t1_p1));
+  assert(0 == memcmp(tupleVarArray1_p1_t1_p1, out, decSz));
+
+  printf("passed.\n\r");
+}
+
 static inline void test_failures(uint8_t * out, size_t outSz) {
   // Confirm bad schemas are rejected
   ABI_t fail_ex1_abi[1] = {
@@ -802,6 +991,11 @@ int main() {
   test_ex13(out, sizeof(out));
   test_fillOrder(out, sizeof(out));
   test_marketSellOrders(out, sizeof(out));
+  test_tupleElementary(out, sizeof(out));
+  test_tupleFixedArray0(out, sizeof(out));
+  test_tupleFixedArray1(out, sizeof(out));
+  test_tupleVarArray0(out, sizeof(out));
+  test_tupleVarArray1(out, sizeof(out));
   test_failures(out, sizeof(out));
 
   printf("=============================\n\r");
