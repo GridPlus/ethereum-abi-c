@@ -191,6 +191,7 @@ static size_t decode_param( void * out,
                             ABISelector_t info,
                             bool szOnly) 
 {
+  while(out == NULL || in == NULL);
   // Elementary types are fairly straight forward
   if (is_elementary_type_variable_sz_array(type)) {
     // Variable sized arrays require a jump to the item
@@ -220,8 +221,7 @@ static size_t decode_param( void * out,
       // Skip past this word
       off += ABI_WORD_SZ;
       // Get the offset for this item and jump to it
-      size_t itemOff = get_abi_u32_be(in, off + (ABI_WORD_SZ * info.arrIdx));
-      off += itemOff;
+      off += get_abi_u32_be(in, off + (ABI_WORD_SZ * info.arrIdx));
     }
   }
   // We should now be at the offset corresponding to the size of the dynamic
@@ -231,6 +231,7 @@ static size_t decode_param( void * out,
 
 // Get an offset of the parameter in question. The rules depend on the type of param.
 static size_t get_param_offset(const ABI_t * types, size_t numTypes, ABISelector_t info, const void * in, size_t inSz) {
+  while (types == NULL || in == NULL);
   ABI_t type = types[info.typeIdx];
   size_t off = 0;
   size_t paramOff = 0;
