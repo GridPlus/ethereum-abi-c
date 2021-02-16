@@ -10,12 +10,13 @@
 // TESTS
 //===============================================================
 
-static void print_data(uint8_t * in, size_t sz) {
-  for (size_t i = 0; i < sz; i++) {
-    printf("0x%x, ", in[i]);
-  }
-  printf("\n\r");
-}
+// Keep this in case it is needed later for debuggin
+// static void print_data(uint8_t * in, size_t sz) {
+//   for (size_t i = 0; i < sz; i++) {
+//     printf("0x%x, ", in[i]);
+//   }
+//   printf("\n\r");
+// }
 
 static inline uint32_t get_u32_be(uint8_t * in, size_t off) {
   return (in[off + 3] | in[off + 2] << 8 | in[off + 1] << 16 | in[off + 0] << 24);
@@ -843,6 +844,9 @@ static inline void test_tupleFixedArray1(uint8_t * out, size_t outSz) {
   assert(decSz == sizeof(tupleFixedArray1_p1_t1_p1));
   assert(0 == memcmp(tupleFixedArray1_p1_t1_p1, out, decSz));
 
+  // Fixed arrays should return 0 size
+  assert(0 == abi_get_array_sz(tupleFixedArray1_abi, ARRAY_SIZE(tupleFixedArray1_abi), info, in, inSz));
+
   printf("passed.\n\r");
 }
 
@@ -890,6 +894,8 @@ static inline void test_tupleVarArray0(uint8_t * out, size_t outSz) {
   assert(decSz == sizeof(tupleVarArray0_p1_t1_p1));
   assert(0 == memcmp(tupleVarArray0_p1_t1_p1, out, decSz));
 
+  assert(2 == abi_get_array_sz(tupleVarArray0_abi, ARRAY_SIZE(tupleVarArray0_abi), info, in, inSz));
+
   printf("passed.\n\r");
 }
 
@@ -936,6 +942,8 @@ static inline void test_tupleVarArray1(uint8_t * out, size_t outSz) {
                                   info, paramInfo, in, inSz);
   assert(decSz == sizeof(tupleVarArray1_p1_t1_p1));
   assert(0 == memcmp(tupleVarArray1_p1_t1_p1, out, decSz));
+
+  assert(2 == abi_get_array_sz(tupleVarArray1_abi, ARRAY_SIZE(tupleVarArray1_abi), info, in, inSz));
 
   printf("passed.\n\r");
 }
