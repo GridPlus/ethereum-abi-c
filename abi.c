@@ -102,6 +102,7 @@ static size_t get_tuple_sz(ABI_t t) {
 }
 
 static size_t get_first_tuple_param_idx(const ABI_t * types, size_t numTypes, size_t tupleIdx) {
+  while(types == NULL);
   if (false == is_tuple_type(types[tupleIdx]) || tupleIdx > numTypes)
     return 0;
   // Determine if there are other tuples that come after this one.
@@ -120,6 +121,7 @@ static size_t get_first_tuple_param_idx(const ABI_t * types, size_t numTypes, si
 // will be represented by an offset in the header param words EVEN IF it is a fixed
 // size tuple array.
 static bool tuple_has_dynamic_type(const ABI_t * types, size_t numTypes, size_t idx) {
+  while(types == NULL);
   if (false == is_tuple_type(types[idx]))
     return false;
   size_t firstParamIdx = get_first_tuple_param_idx(types, numTypes, idx);
