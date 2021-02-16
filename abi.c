@@ -200,8 +200,7 @@ static size_t decode_dynamic_param( void * out,
                                     ABI_t type, 
                                     const void * in, 
                                     size_t inSz, 
-                                    size_t off,
-                                    bool szOnly) {
+                                    size_t off) {
   if (false == is_dynamic_atomic_type(type))
     return 0;
   const uint8_t * inPtr = in;
@@ -209,15 +208,11 @@ static size_t decode_dynamic_param( void * out,
     return 0;
   size_t elemSz = get_abi_u32_be(in, off);
   off += ABI_WORD_SZ;
-  // A user may only wish to know the *size* of this param (i.e. call `abi_get_param_sz`).
-  // In this case we bypass the sanity checks and do NOT copy data.
-  if (szOnly == false) {
-    if (outSz < elemSz)
-      return 0;
-    if (off + elemSz > inSz)
-      return 0;
-    memcpy(out, inPtr + off, elemSz);
-  }
+  if (outSz < elemSz)
+    return 0;
+  if (off + elemSz > inSz)
+    return 0;
+  memcpy(out, inPtr + off, elemSz);
   return elemSz;
 }
 
@@ -229,8 +224,7 @@ static size_t decode_param( void * out,
                             const void * in, 
                             size_t inSz, 
                             size_t off, 
-                            ABISelector_t info,
-                            bool szOnly) 
+                            ABISelector_t info) 
 {
   while(out == NULL || in == NULL);
   // Elementary types are fairly straight forward
@@ -266,7 +260,7 @@ static size_t decode_param( void * out,
   }
   // We should now be at the offset corresponding to the size of the dynamic
   // type element that we want.
-  return decode_dynamic_param(out, outSz, type, in, inSz, off, szOnly);
+  return decode_dynamic_param(out, outSz, type, in, inSz, off);
 }
 
 // Get an offset of the parameter in question. The rules depend on the type of param.
@@ -380,7 +374,7 @@ size_t abi_decode_param(void * out,
   size_t paramOff = get_param_offset(types, numTypes, info, in, inSz);
   if (paramOff > inSz)
     return 0;
-  return decode_param(out, outSz, types[info.typeIdx], in, inSz, paramOff, info, false);
+  return decode_param(out, outSz, types[info.typeIdx], in, inSz, paramOff, info);
 }
 
 size_t abi_decode_tuple_param(void * out, 
