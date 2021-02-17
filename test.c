@@ -424,6 +424,8 @@ static inline void test_fillOrder(uint8_t * out, size_t outSz) {
   size_t inSz = sizeof(fillOrder_encoded) - 4;
   printf("(Tuple) FillOrder...");
 
+  assert(true == abi_is_valid_schema(fillOrder_abi, ARRAY_SIZE(fillOrder_abi)));
+
   // Non-tuple params
   info.typeIdx = 1;
   assert(abi_decode_param(out, outSz, fillOrder_abi, ARRAY_SIZE(fillOrder_abi), info, in, inSz) == sizeof(fillOrder_p1));
@@ -517,6 +519,8 @@ static inline void test_marketSellOrders(uint8_t * out, size_t outSz) {
   uint8_t * in = marketSellOrders_encoded+4;
   size_t inSz = sizeof(marketSellOrders_encoded) - 4;
   printf("(Tuple) marketSellOrders...");
+
+  assert(true == abi_is_valid_schema(marketSellOrders_abi, ARRAY_SIZE(marketSellOrders_abi)));
 
   // Non-tuple params
   tupleInfo.typeIdx = 1;
@@ -729,6 +733,8 @@ static inline void test_tupleElementary(uint8_t * out, size_t outSz) {
   size_t inSz = sizeof(tupleElementary_encoded);
   printf("(Tuple) tupleElementary_encoded...");
 
+  assert(true == abi_is_valid_schema(tupleElementary_abi, ARRAY_SIZE(tupleElementary_abi)));
+
   // Non-tuple params
   assert( abi_decode_param(out, outSz, tupleElementary_abi, ARRAY_SIZE(tupleElementary_abi), 
           info, in, inSz) == sizeof(tupleElementary_p0));
@@ -761,6 +767,8 @@ static inline void test_tupleFixedArray0(uint8_t * out, size_t outSz) {
   uint8_t * in = tupleFixedArray0_encoded;
   size_t inSz = sizeof(tupleFixedArray0_encoded);
   printf("(Tuple) tupleFixedArray0_encoded...");
+
+  assert(true == abi_is_valid_schema(tupleFixedArray0_abi, ARRAY_SIZE(tupleFixedArray0_abi)));
 
   // Non-tuple params
   assert( abi_decode_param(out, outSz, tupleFixedArray0_abi, ARRAY_SIZE(tupleFixedArray0_abi), 
@@ -807,6 +815,8 @@ static inline void test_tupleFixedArray1(uint8_t * out, size_t outSz) {
   size_t inSz = sizeof(tupleFixedArray1_encoded);
   printf("(Tuple) tupleFixedArray1_encoded...");
   size_t decSz;
+
+  assert(true == abi_is_valid_schema(tupleFixedArray1_abi, ARRAY_SIZE(tupleFixedArray1_abi)));
 
   // Non-tuple params
   decSz = abi_decode_param( out, outSz, tupleFixedArray1_abi, ARRAY_SIZE(tupleFixedArray1_abi), 
@@ -857,6 +867,8 @@ static inline void test_tupleVarArray0(uint8_t * out, size_t outSz) {
   printf("(Tuple) tupleVarArray0_encoded...");
   size_t decSz;
 
+  assert(true == abi_is_valid_schema(tupleVarArray0_abi, ARRAY_SIZE(tupleVarArray0_abi)));
+
   // Non-tuple params
   decSz = abi_decode_param( out, outSz, tupleVarArray0_abi, ARRAY_SIZE(tupleVarArray0_abi), 
                             info, in, inSz);
@@ -905,6 +917,8 @@ static inline void test_tupleVarArray1(uint8_t * out, size_t outSz) {
   size_t inSz = sizeof(tupleVarArray1_encoded);
   printf("(Tuple) tupleVarArray1_encoded...");
   size_t decSz;
+
+  assert(true == abi_is_valid_schema(tupleVarArray1_abi, ARRAY_SIZE(tupleVarArray1_abi)));
 
   // Non-tuple params
   decSz = abi_decode_param( out, outSz, tupleVarArray1_abi, ARRAY_SIZE(tupleVarArray1_abi), 

@@ -28,7 +28,7 @@ static bool is_dynamic_atomic_type(ABI_t t) {
 // Elementary types are atomic types for which there is only one instance (as
 // opposed to array types, which contain a fixed or variable number of instances).
 static bool is_elementary_atomic_type(ABI_t t) {
-  return false == is_dynamic_atomic_type(t);
+  return false == is_dynamic_atomic_type(t) && false == is_tuple_type(t);
 }
 
 static bool is_single_elementary_type(ABI_t t) {
@@ -89,16 +89,6 @@ static bool is_dynamic_type_fixed_sz_array(ABI_t type) {
 static bool is_dynamic_type_variable_sz_array(ABI_t type) {
   return ((is_dynamic_type_array(type)) &&
           (is_variable_sz_array(type)));
-}
-
-static bool is_tuple_type(ABI_t t) {
-  return (t.type < ABI_TUPLE20 && t.type > ABI_TUPLE1);
-}
-
-static size_t get_tuple_sz(ABI_t t) {
-  if (false == is_tuple_type(t))
-    return 0;
-  return (t.type - ABI_TUPLE1) + 1; 
 }
 
 static size_t get_first_tuple_param_idx(const ABI_t * types, size_t numTypes, size_t tupleIdx) {
@@ -322,12 +312,24 @@ static size_t get_param_offset( const ABI_t * types,
 //===============================================
 // API
 //===============================================
+bool is_tuple_type(ABI_t t) {
+  return (t.type < ABI_TUPLE20 && t.type > ABI_TUPLE1);
+}
+
+size_t get_tuple_sz(ABI_t t) {
+  if (false == is_tuple_type(t))
+    return 0;
+  return (t.type - ABI_TUPLE1) + 1; 
+}
+
+
 bool abi_is_valid_schema(const ABI_t * types, size_t numTypes) {
   while(types == NULL);
   for (size_t i = 0; i < numTypes; i++) {
     if ((types[i].type >= ABI_MAX || types[i].type <= ABI_NONE) ||
         ( (false == is_single_elementary_type(types[i])) &&
           (false == is_single_dynamic_type(types[i])) &&
+          (false == is_tuple_type(types[i])) &&
           (false == is_elementary_type_fixed_sz_array(types[i])) &&
           (false == is_elementary_type_variable_sz_array(types[i])) &&
           (false == is_dynamic_type_fixed_sz_array(types[i])) &&

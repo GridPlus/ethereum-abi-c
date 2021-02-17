@@ -141,6 +141,12 @@ typedef struct {
 } ABISelector_t;
 #pragma pack(pop)
 
+// Helper to determine if this is a tuple type
+bool is_tuple_type(ABI_t t);
+
+// Helper to get the number of parameters in a tuple type
+size_t get_tuple_sz(ABI_t t);
+
 // Ensure we have a valid ABI schema being passed. We check the following:
 // * Is each atomic type a valid ABI type? (e.g. uint32, string)
 // * Is each type an single element or array (fixed or dynamic)?
