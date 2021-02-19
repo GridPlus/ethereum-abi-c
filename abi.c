@@ -313,7 +313,7 @@ static size_t get_param_offset( const ABI_t * types,
 // API
 //===============================================
 bool is_tuple_type(ABI_t t) {
-  return (t.type < ABI_TUPLE20 && t.type > ABI_TUPLE1);
+  return (t.type <= ABI_TUPLE20 && t.type >= ABI_TUPLE1);
 }
 
 size_t get_tuple_sz(ABI_t t) {
@@ -321,7 +321,6 @@ size_t get_tuple_sz(ABI_t t) {
     return 0;
   return (t.type - ABI_TUPLE1) + 1; 
 }
-
 
 bool abi_is_valid_schema(const ABI_t * types, size_t numTypes) {
   while(types == NULL);
