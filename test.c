@@ -11,12 +11,12 @@
 //===============================================================
 
 // Keep this in case it is needed later for debuggin
-// static void print_data(uint8_t * in, size_t sz) {
-//   for (size_t i = 0; i < sz; i++) {
-//     printf("0x%x, ", in[i]);
-//   }
-//   printf("\n\r");
-// }
+static void print_data(uint8_t * in, size_t sz) {
+  for (size_t i = 0; i < sz; i++) {
+    printf("0x%x, ", in[i]);
+  }
+  printf("\n\r");
+}
 
 static inline uint32_t get_u32_be(uint8_t * in, size_t off) {
   return (in[off + 3] | in[off + 2] << 8 | in[off + 1] << 16 | in[off + 0] << 24);
@@ -962,6 +962,299 @@ static inline void test_tupleVarArray1(uint8_t * out, size_t outSz) {
   printf("passed.\n\r");
 }
 
+static inline void test_tupleVarArray2(uint8_t * out, size_t outSz) {
+  ABISelector_t info = { .typeIdx = 0 };
+  uint8_t * in = tupleVarArray2_encoded;
+  size_t inSz = sizeof(tupleVarArray2_encoded);
+  printf("(Tuple) tupleVarArray2_encoded...");
+  size_t decSz;
+
+  assert(true == abi_is_valid_schema(tupleVarArray2_abi, ARRAY_SIZE(tupleVarArray2_abi)));
+  assert(2 == abi_get_array_sz(tupleVarArray2_abi, ARRAY_SIZE(tupleVarArray2_abi), info, in, inSz));
+
+  // Non-tuple params
+  info.typeIdx = 1;
+  decSz = abi_decode_param( out, outSz, tupleVarArray2_abi, ARRAY_SIZE(tupleVarArray2_abi), 
+                            info, in, inSz);
+  assert(decSz == sizeof(tupleVarArray2_p1));
+  assert(0 == memcmp(tupleVarArray2_p1, out, sizeof(tupleVarArray2_p1)));
+  memset(out, 0, outSz);
+
+  // Tuple types
+  info.typeIdx = 0;
+  ABISelector_t paramInfo = { .typeIdx = 0 };
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray2_abi, ARRAY_SIZE(tupleVarArray2_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray2_p1_t0_p0_0));
+  assert(0 == memcmp(tupleVarArray2_p1_t0_p0_0, out, decSz));
+  paramInfo.arrIdx = 1;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray2_abi, ARRAY_SIZE(tupleVarArray2_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray2_p1_t0_p0_1));
+  assert(0 == memcmp(tupleVarArray2_p1_t0_p0_1, out, decSz));
+  paramInfo.arrIdx = 2;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray2_abi, ARRAY_SIZE(tupleVarArray2_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray2_p1_t0_p0_2));
+  paramInfo.typeIdx = 1;
+  assert(0 == memcmp(tupleVarArray2_p1_t0_p0_2, out, decSz));
+  paramInfo.arrIdx = 0;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray2_abi, ARRAY_SIZE(tupleVarArray2_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray2_p1_t0_p1_0));
+  assert(0 == memcmp(tupleVarArray2_p1_t0_p1_0, out, decSz));
+  paramInfo.arrIdx = 1;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray2_abi, ARRAY_SIZE(tupleVarArray2_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray2_p1_t0_p1_1));
+  assert(0 == memcmp(tupleVarArray2_p1_t0_p1_1, out, decSz));
+  paramInfo.arrIdx = 2;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray2_abi, ARRAY_SIZE(tupleVarArray2_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray2_p1_t0_p1_2));
+  assert(0 == memcmp(tupleVarArray2_p1_t0_p1_2, out, decSz));
+  paramInfo.arrIdx = 3;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray2_abi, ARRAY_SIZE(tupleVarArray2_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray2_p1_t0_p1_3));
+  assert(0 == memcmp(tupleVarArray2_p1_t0_p1_3, out, decSz));
+  paramInfo.arrIdx = 4;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray2_abi, ARRAY_SIZE(tupleVarArray2_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray2_p1_t0_p1_4));
+  assert(0 == memcmp(tupleVarArray2_p1_t0_p1_4, out, decSz));
+  paramInfo.arrIdx = 5;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray2_abi, ARRAY_SIZE(tupleVarArray2_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray2_p1_t0_p1_5));
+  assert(0 == memcmp(tupleVarArray2_p1_t0_p1_5, out, decSz));
+  paramInfo.arrIdx = 6;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray2_abi, ARRAY_SIZE(tupleVarArray2_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray2_p1_t0_p1_6));
+  assert(0 == memcmp(tupleVarArray2_p1_t0_p1_6, out, decSz));
+  paramInfo.arrIdx = 7;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray2_abi, ARRAY_SIZE(tupleVarArray2_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray2_p1_t0_p1_7));
+  assert(0 == memcmp(tupleVarArray2_p1_t0_p1_7, out, decSz));
+  paramInfo.arrIdx = 0;
+  paramInfo.typeIdx = 2;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray2_abi, ARRAY_SIZE(tupleVarArray2_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray2_p1_t0_p2));
+  assert(0 == memcmp(tupleVarArray2_p1_t0_p2, out, decSz));
+
+  info.arrIdx = 1;
+  paramInfo.arrIdx = 0;
+  paramInfo.typeIdx = 0;
+
+  info.typeIdx = 0;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray2_abi, ARRAY_SIZE(tupleVarArray2_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray2_p1_t1_p0_0));
+  assert(0 == memcmp(tupleVarArray2_p1_t1_p0_0, out, decSz));
+  paramInfo.arrIdx = 1;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray2_abi, ARRAY_SIZE(tupleVarArray2_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray2_p1_t1_p0_1));
+  assert(0 == memcmp(tupleVarArray2_p1_t1_p0_1, out, decSz));
+  paramInfo.arrIdx = 2;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray2_abi, ARRAY_SIZE(tupleVarArray2_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray2_p1_t1_p0_2));
+  paramInfo.typeIdx = 1;
+  assert(0 == memcmp(tupleVarArray2_p1_t1_p0_2, out, decSz));
+  paramInfo.arrIdx = 0;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray2_abi, ARRAY_SIZE(tupleVarArray2_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray2_p1_t1_p1_0));
+  assert(0 == memcmp(tupleVarArray2_p1_t1_p1_0, out, decSz));
+  paramInfo.arrIdx = 1;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray2_abi, ARRAY_SIZE(tupleVarArray2_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray2_p1_t1_p1_1));
+  assert(0 == memcmp(tupleVarArray2_p1_t1_p1_1, out, decSz));
+  paramInfo.arrIdx = 2;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray2_abi, ARRAY_SIZE(tupleVarArray2_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray2_p1_t1_p1_2));
+  assert(0 == memcmp(tupleVarArray2_p1_t1_p1_2, out, decSz));
+  paramInfo.arrIdx = 3;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray2_abi, ARRAY_SIZE(tupleVarArray2_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray2_p1_t1_p1_3));
+  assert(0 == memcmp(tupleVarArray2_p1_t1_p1_3, out, decSz));
+  paramInfo.arrIdx = 4;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray2_abi, ARRAY_SIZE(tupleVarArray2_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray2_p1_t1_p1_4));
+  assert(0 == memcmp(tupleVarArray2_p1_t1_p1_4, out, decSz));
+  paramInfo.arrIdx = 5;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray2_abi, ARRAY_SIZE(tupleVarArray2_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray2_p1_t1_p1_5));
+  assert(0 == memcmp(tupleVarArray2_p1_t1_p1_5, out, decSz));
+  paramInfo.arrIdx = 6;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray2_abi, ARRAY_SIZE(tupleVarArray2_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray2_p1_t1_p1_6));
+  assert(0 == memcmp(tupleVarArray2_p1_t1_p1_6, out, decSz));
+  paramInfo.arrIdx = 7;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray2_abi, ARRAY_SIZE(tupleVarArray2_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray2_p1_t1_p1_7));
+  assert(0 == memcmp(tupleVarArray2_p1_t1_p1_7, out, decSz));
+  paramInfo.arrIdx = 0;
+  paramInfo.typeIdx = 2;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray2_abi, ARRAY_SIZE(tupleVarArray2_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray2_p1_t1_p2));
+  assert(0 == memcmp(tupleVarArray2_p1_t1_p2, out, decSz));
+
+  printf("passed.\n\r");
+}
+
+static inline void test_tupleVarArray3(uint8_t * out, size_t outSz) {
+  ABISelector_t info = { .typeIdx = 0 };
+  uint8_t * in = tupleVarArray3_encoded;
+  size_t inSz = sizeof(tupleVarArray3_encoded);
+  printf("(Tuple) tupleVarArray3_encoded...");
+  size_t decSz;
+
+  assert(true == abi_is_valid_schema(tupleVarArray3_abi, ARRAY_SIZE(tupleVarArray3_abi)));
+  assert(2 == abi_get_array_sz(tupleVarArray2_abi, ARRAY_SIZE(tupleVarArray2_abi), info, in, inSz));
+
+  // Non-tuple params
+  info.typeIdx = 1;
+  decSz = abi_decode_param( out, outSz, tupleVarArray3_abi, ARRAY_SIZE(tupleVarArray3_abi), 
+                            info, in, inSz);
+  assert(decSz == sizeof(tupleVarArray3_p1));
+  assert(0 == memcmp(tupleVarArray3_p1, out, sizeof(tupleVarArray3_p1)));
+  memset(out, 0, outSz);
+
+  // Tuple types
+  info.typeIdx = 0;
+  ABISelector_t paramInfo = { .typeIdx = 0 };
+  assert(3 == abi_get_tuple_param_array_sz(tupleVarArray3_abi, ARRAY_SIZE(tupleVarArray3_abi),
+                                            info, paramInfo, in, inSz));
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray3_abi, ARRAY_SIZE(tupleVarArray3_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray3_p0_t0_p0_0));
+  assert(0 == memcmp(tupleVarArray3_p0_t0_p0_0, out, decSz));
+  paramInfo.arrIdx = 1;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray3_abi, ARRAY_SIZE(tupleVarArray3_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray3_p0_t0_p0_1));
+  assert(0 == memcmp(tupleVarArray3_p0_t0_p0_1, out, decSz));
+  paramInfo.arrIdx = 2;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray3_abi, ARRAY_SIZE(tupleVarArray3_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray3_p0_t0_p0_2));
+  assert(0 == memcmp(tupleVarArray3_p0_t0_p0_2, out, decSz));
+  paramInfo.arrIdx = 0;
+  paramInfo.typeIdx = 1;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray3_abi, ARRAY_SIZE(tupleVarArray3_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray3_p0_t0_p1));
+  assert(0 == memcmp(tupleVarArray3_p0_t0_p1, out, decSz));
+  // Validate that non-array returns array size of 0
+  assert(0 == abi_get_tuple_param_array_sz(tupleVarArray3_abi, ARRAY_SIZE(tupleVarArray3_abi),
+                                            info, paramInfo, in, inSz));
+
+  paramInfo.typeIdx = 0;
+  info.arrIdx = 1;
+  assert(2 == abi_get_tuple_param_array_sz(tupleVarArray3_abi, ARRAY_SIZE(tupleVarArray3_abi),
+                                            info, paramInfo, in, inSz));
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray3_abi, ARRAY_SIZE(tupleVarArray3_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray3_p0_t1_p0_0));
+  assert(0 == memcmp(tupleVarArray3_p0_t1_p0_0, out, decSz));
+  paramInfo.arrIdx = 1;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray3_abi, ARRAY_SIZE(tupleVarArray3_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray3_p0_t1_p0_1));
+  assert(0 == memcmp(tupleVarArray3_p0_t1_p0_1, out, decSz));
+  paramInfo.arrIdx = 0;
+  paramInfo.typeIdx = 1;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray3_abi, ARRAY_SIZE(tupleVarArray3_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray3_p0_t1_p1));
+  assert(0 == memcmp(tupleVarArray3_p0_t1_p1, out, decSz));
+
+  printf("passed.\n\r");
+}
+
+static inline void test_tupleVarArray4(uint8_t * out, size_t outSz) {
+  ABISelector_t info = { .typeIdx = 0 };
+  uint8_t * in = tupleVarArray4_encoded;
+  size_t inSz = sizeof(tupleVarArray4_encoded);
+  printf("(Tuple) tupleVarArray4_encoded...");
+  size_t decSz;
+
+  assert(true == abi_is_valid_schema(tupleVarArray4_abi, ARRAY_SIZE(tupleVarArray4_abi)));
+  assert(2 == abi_get_array_sz(tupleVarArray2_abi, ARRAY_SIZE(tupleVarArray2_abi), info, in, inSz));
+
+  // Non-tuple params
+  info.typeIdx = 1;
+  decSz = abi_decode_param( out, outSz, tupleVarArray4_abi, ARRAY_SIZE(tupleVarArray4_abi), 
+                            info, in, inSz);
+  assert(decSz == sizeof(tupleVarArray4_p1));
+  assert(0 == memcmp(tupleVarArray4_p1, out, sizeof(tupleVarArray4_p1)));
+  memset(out, 0, outSz);
+
+  // Tuple types
+  info.typeIdx = 0;
+  ABISelector_t paramInfo = { .typeIdx = 0 };
+  assert(3 == abi_get_tuple_param_array_sz(tupleVarArray4_abi, ARRAY_SIZE(tupleVarArray4_abi),
+                                            info, paramInfo, in, inSz));
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray4_abi, ARRAY_SIZE(tupleVarArray4_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray4_p0_t0_p0_0));
+  assert(0 == memcmp(tupleVarArray4_p0_t0_p0_0, out, decSz));
+  paramInfo.arrIdx = 1;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray4_abi, ARRAY_SIZE(tupleVarArray4_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray4_p0_t0_p0_1));
+  assert(0 == memcmp(tupleVarArray4_p0_t0_p0_1, out, decSz));
+  paramInfo.arrIdx = 2;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray4_abi, ARRAY_SIZE(tupleVarArray4_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray4_p0_t0_p0_2));
+  assert(0 == memcmp(tupleVarArray4_p0_t0_p0_2, out, decSz));
+  paramInfo.arrIdx = 0;
+  paramInfo.typeIdx = 1;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray4_abi, ARRAY_SIZE(tupleVarArray4_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray4_p0_t0_p1));
+  assert(0 == memcmp(tupleVarArray4_p0_t0_p1, out, decSz));
+  // Validate that non-array returns array size of 0
+  assert(0 == abi_get_tuple_param_array_sz(tupleVarArray4_abi, ARRAY_SIZE(tupleVarArray4_abi),
+                                            info, paramInfo, in, inSz));
+
+  paramInfo.typeIdx = 0;
+  info.arrIdx = 1;
+  assert(2 == abi_get_tuple_param_array_sz(tupleVarArray4_abi, ARRAY_SIZE(tupleVarArray4_abi),
+                                            info, paramInfo, in, inSz));
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray4_abi, ARRAY_SIZE(tupleVarArray4_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray4_p0_t1_p0_0));
+  assert(0 == memcmp(tupleVarArray4_p0_t1_p0_0, out, decSz));
+  paramInfo.arrIdx = 1;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray4_abi, ARRAY_SIZE(tupleVarArray4_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray4_p0_t1_p0_1));
+  assert(0 == memcmp(tupleVarArray4_p0_t1_p0_1, out, decSz));
+  paramInfo.arrIdx = 0;
+  paramInfo.typeIdx = 1;
+  decSz = abi_decode_tuple_param( out, outSz, tupleVarArray4_abi, ARRAY_SIZE(tupleVarArray4_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleVarArray4_p0_t1_p1));
+  assert(0 == memcmp(tupleVarArray4_p0_t1_p1, out, decSz));
+
+  printf("passed.\n\r");
+}
+
 static inline void test_failures(uint8_t * out, size_t outSz) {
   // Confirm bad schemas are rejected
   ABI_t fail_ex1_abi[1] = {
@@ -1018,6 +1311,9 @@ int main() {
   test_tupleFixedArray1(out, sizeof(out));
   test_tupleVarArray0(out, sizeof(out));
   test_tupleVarArray1(out, sizeof(out));
+  test_tupleVarArray2(out, sizeof(out));
+  test_tupleVarArray3(out, sizeof(out));
+  test_tupleVarArray4(out, sizeof(out));
   test_failures(out, sizeof(out));
 
   printf("=============================\n\r");

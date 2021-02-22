@@ -123,6 +123,19 @@ static bool tuple_has_dynamic_type(const ABI_t * types, size_t numTypes, size_t 
   return false;
 }
 
+static bool tuple_has_variable_sz_elem_arr(const ABI_t * types, size_t numTypes, size_t idx) {
+  while(types == NULL);
+  if (false == is_tuple_type(types[idx]))
+    return false;
+  size_t firstParamIdx = get_first_tuple_param_idx(types, numTypes, idx);
+  size_t numParams = get_tuple_sz(types[idx]);
+  for (size_t i = firstParamIdx; i < firstParamIdx + numParams; i++) {
+    if (true == is_elementary_type_variable_sz_array(types[i]))
+      return true;
+  }
+  return false;
+}
+
 // Get the number of bytes describing an elementary data type
 static size_t elem_sz(ABI_t t) {
   if (true == is_dynamic_atomic_type(t))
@@ -309,6 +322,62 @@ static size_t get_param_offset( const ABI_t * types,
   return paramOff;
 }
 
+// Get the starting index of data for the specified tuple. If the tuple is an array
+// this will be the starting point of the tuple item we want, but NOT the starting
+// point of the tuple's parameter
+size_t get_tuple_data_start(const ABI_t * types, size_t numTypes, ABISelector_t tupleInfo, const void * in, size_t inSz)
+{
+  while(!types || !in);
+  size_t dataOff = 0;
+  ABI_t tupleType = types[tupleInfo.typeIdx];
+  size_t startIdx = get_first_tuple_param_idx(types, numTypes, tupleInfo.typeIdx);
+  if (true == is_variable_sz_array(tupleType)) {
+    // Get the offset of the tuple data and shift our input buffer offset
+    size_t paramOff = get_param_offset(types, numTypes, tupleInfo, in, inSz);
+    if (paramOff > inSz)
+      return 0;
+    // If this is a variable sz array we need to get the offset of tuple item we want
+    // The paramOff points to the tuple metadata so let's roll dataOff forward.
+    // Skip the first word here, which is the size of the tuple array
+    dataOff = paramOff + ABI_WORD_SZ;
+    // The first word here is the size of the tuple array. 
+    // Make sure we don't overrun it.
+    if (tupleInfo.arrIdx >= get_abi_u32_be(in, paramOff))
+      return 0;
+    // Now find the second offset that jumps us to the start of the tuple item we want.
+    if (true == tuple_has_dynamic_type(types, numTypes, tupleInfo.typeIdx) || true == tuple_has_variable_sz_elem_arr(types, numTypes, tupleInfo.typeIdx)) {
+      dataOff += get_abi_u32_be(in, dataOff + (tupleInfo.arrIdx * ABI_WORD_SZ));
+    } else {
+      size_t tupleSz = get_tuple_sz(tupleType);
+      size_t tupleItemDataSz = 0;
+      for (size_t i = startIdx; i < (startIdx + tupleSz); i++) {
+        if (true == types[i].isArray && types[i].arraySz > 0)
+          tupleItemDataSz += ABI_WORD_SZ * types[i].arraySz;
+        else if (false == types[i].isArray)
+          tupleItemDataSz += ABI_WORD_SZ;
+      }
+      dataOff += tupleInfo.arrIdx * tupleItemDataSz;
+    }
+  } else if (true == tuple_has_dynamic_type(types, numTypes, tupleInfo.typeIdx)) {
+    // Any tuple that has a dynamic type is represented by an offset to its data
+    dataOff = get_abi_u32_be(in, tupleInfo.typeIdx * ABI_WORD_SZ);
+    // If this is a fixed sz array we need to jump to the array index
+    if (true == is_fixed_sz_array(tupleType)) {
+      dataOff += get_abi_u32_be(in, dataOff + (tupleInfo.arrIdx * ABI_WORD_SZ));
+    }
+  } else if (true == is_fixed_sz_array(tupleType)) {
+    // Fixed size tuple arrays with all elementary types are treated like normal
+    // fixed size arrays of individual elementary types, i.e. the data is all serialized
+    // in the header params.
+    dataOff = (tupleInfo.typeIdx + (tupleInfo.arrIdx * get_tuple_sz(tupleType))) * ABI_WORD_SZ;
+  } else {
+    // For single tuple types, the header param word contains the offset of the data.
+    // We just need to skip to the start of the tuple data.
+    dataOff = ABI_WORD_SZ * (tupleInfo.typeIdx);
+  }
+  return dataOff;
+}
+
 //===============================================
 // API
 //===============================================
@@ -360,6 +429,27 @@ size_t abi_get_array_sz(const ABI_t * types,
   return get_abi_u32_be(in, paramOff);
 }
 
+size_t abi_get_tuple_param_array_sz(const ABI_t * types, 
+                                    size_t numTypes, 
+                                    ABISelector_t tupleInfo,
+                                    ABISelector_t paramInfo, 
+                                    const void * in,
+                                    size_t inSz)
+{
+  while(types == NULL || in == NULL);
+  size_t typeIdx = get_first_tuple_param_idx(types, numTypes, tupleInfo.typeIdx) + paramInfo.typeIdx;
+  ABI_t type = types[typeIdx];
+  if ((typeIdx >= numTypes) ||
+      (false == abi_is_valid_schema(types, numTypes)) ||
+      (false == is_variable_sz_array(type)) )
+    return 0;
+  // Get to the start of this tuple's data
+  size_t dataOff = get_tuple_data_start(types, numTypes, tupleInfo, in, inSz);
+  // We are at a jump that points to the array size
+  dataOff += get_abi_u32_be(in, dataOff);
+  return get_abi_u32_be(in, dataOff);
+}
+
 size_t abi_decode_param(void * out, 
                         size_t outSz, 
                         const ABI_t * types, 
@@ -407,45 +497,8 @@ size_t abi_decode_tuple_param(void * out,
   if (paramInfo.typeIdx > numTupleTypes || paramInfo.typeIdx > numTypes)
     return 0;
 
-  // Get the offset of the tuple data and shift our input buffer offset
-  size_t paramOff = get_param_offset(types, numTypes, tupleInfo, in, inSz);
-  if (paramOff > inSz)
-    return 0;
-
   // Get the offset at which the tuple data starts
-  size_t dataOff = 0;
-  if (true == is_variable_sz_array(tupleType)) {
-    // If this is a variable sz array we need to get the offset of tuple item we want
-    // The paramOff points to the tuple metadata so let's roll dataOff forward.
-    // Skip the first word here, which is the size of the tuple array
-    dataOff = paramOff + ABI_WORD_SZ;
-    // The first word here is the size of the tuple array. 
-    // Make sure we don't overrun it.
-    if (tupleInfo.arrIdx >= get_abi_u32_be(in, paramOff))
-      return 0;
-    // Now find the second offset that jumps us to the start of the tuple item we want.
-    if (true == tuple_has_dynamic_type(types, numTypes, tupleInfo.typeIdx)) {
-      dataOff += get_abi_u32_be(in, dataOff + (tupleInfo.arrIdx * ABI_WORD_SZ));
-    } else {
-      dataOff += tupleInfo.arrIdx * get_tuple_sz(tupleType) * ABI_WORD_SZ;
-    }
-  } else if (true == tuple_has_dynamic_type(types, numTypes, tupleInfo.typeIdx)) {
-    // Any tuple that has a dynamic type is represented by an offset to its data
-    dataOff = get_abi_u32_be(in, tupleInfo.typeIdx * ABI_WORD_SZ);
-    // If this is a fixed sz array we need to jump to the array index
-    if (true == is_fixed_sz_array(tupleType)) {
-      dataOff += get_abi_u32_be(in, dataOff + (tupleInfo.arrIdx * ABI_WORD_SZ));
-    }
-  }  else if (true == is_fixed_sz_array(tupleType)) {
-    // Fixed size tuple arrays with all elementary types are treated like normal
-    // fixed size arrays of individual elementary types, i.e. the data is all serialized
-    // in the header params.
-    dataOff = (tupleInfo.typeIdx + (tupleInfo.arrIdx * get_tuple_sz(tupleType))) * ABI_WORD_SZ;
-  } else {
-    // For single tuple types, the header param word contains the offset of the data.
-    // We just need to skip to the start of the tuple data.
-    dataOff = ABI_WORD_SZ * (tupleInfo.typeIdx);
-  }
+  size_t dataOff = get_tuple_data_start(types, numTypes, tupleInfo, in, inSz);
 
   // Jump to the start of our tuple item
   in += dataOff;

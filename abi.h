@@ -159,9 +159,8 @@ size_t get_tuple_sz(ABI_t t);
 // @return            - true if we can handle every type in this schema
 bool abi_is_valid_schema(const ABI_t * types, size_t numTypes);
 
-// Fetch the array size of a specific dimension of an array. The array must
-// be variable-size, since fixed-size arrays may only have one dimension and
-// the size is defined in the type.
+// Fetch the array size of an array item. The array must be variable-size, since 
+// fixed-size arrays may only have one dimension and the size is defined in the type.
 // @param `types`     - array of ABI type definitions
 // @param `numTypes`  - the number of types in this ABI definition
 // @param `info`      - information about the data to be selected
@@ -173,6 +172,21 @@ size_t abi_get_array_sz(const ABI_t * types,
                         ABISelector_t info, 
                         const void * in,
                         size_t inSz);
+
+// Get the array size of a type inside of a tuple. Must be a variable size array.
+// @param `types`     - array of ABI type definitions
+// @param `numTypes`  - the number of types in this ABI definition
+// @param `tupleInfo` - information about the tuple item
+// @param `paramInfo` - information about the parameter we want inside the tuple
+// @param `in`        - Buffer containin the input data
+// @param `inSz`      - Size of `in`
+// @return            - Size of array dimension; 0 on error.
+size_t abi_get_tuple_param_array_sz(const ABI_t * types, 
+                                    size_t numTypes, 
+                                    ABISelector_t tupleInfo,
+                                    ABISelector_t paramInfo, 
+                                    const void * in,
+                                    size_t inSz);
 
 // Decode and return a param's data in `out` given a set of ABI types and an `in` buffer.
 // Note that padding is stripped from elementary types, which are encoded in 32-byte words regardless
