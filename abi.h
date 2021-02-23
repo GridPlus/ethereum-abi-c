@@ -99,6 +99,29 @@ typedef enum {
   ABI_BYTES,
   ABI_STRING,
 
+  // Tuple types - the number corresponds to the count of sub-params
+  // (Implicitly this means we only support tuples with up to 20 params)
+  ABI_TUPLE1,
+  ABI_TUPLE2,
+  ABI_TUPLE3,
+  ABI_TUPLE4,
+  ABI_TUPLE5,
+  ABI_TUPLE6,
+  ABI_TUPLE7,
+  ABI_TUPLE8,
+  ABI_TUPLE9,
+  ABI_TUPLE10,
+  ABI_TUPLE11,
+  ABI_TUPLE12,
+  ABI_TUPLE13,
+  ABI_TUPLE14,
+  ABI_TUPLE15,
+  ABI_TUPLE16,
+  ABI_TUPLE17,
+  ABI_TUPLE18,
+  ABI_TUPLE19,
+  ABI_TUPLE20,
+
   ABI_MAX,
 } ABIAtomic_t;
 
@@ -118,6 +141,12 @@ typedef struct {
 } ABISelector_t;
 #pragma pack(pop)
 
+// Helper to determine if this is a tuple type
+bool is_tuple_type(ABI_t t);
+
+// Helper to get the number of parameters in a tuple type
+size_t get_tuple_sz(ABI_t t);
+
 // Ensure we have a valid ABI schema being passed. We check the following:
 // * Is each atomic type a valid ABI type? (e.g. uint32, string)
 // * Is each type an single element or array (fixed or dynamic)?
@@ -130,9 +159,8 @@ typedef struct {
 // @return            - true if we can handle every type in this schema
 bool abi_is_valid_schema(const ABI_t * types, size_t numTypes);
 
-// Fetch the array size of a specific dimension of an array. The array must
-// be variable-size, since fixed-size arrays may only have one dimension and
-// the size is defined in the type.
+// Fetch the array size of an array item. The array must be variable-size, since 
+// fixed-size arrays may only have one dimension and the size is defined in the type.
 // @param `types`     - array of ABI type definitions
 // @param `numTypes`  - the number of types in this ABI definition
 // @param `info`      - information about the data to be selected
@@ -145,20 +173,20 @@ size_t abi_get_array_sz(const ABI_t * types,
                         const void * in,
                         size_t inSz);
 
-// Get the element size of a particular parameter whose type is dynamic.
-// This is equivalent to `abi_decode_param`, but does not copy data to an output
-// buffer and only works with dynamic types.
+// Get the array size of a type inside of a tuple. Must be a variable size array.
 // @param `types`     - array of ABI type definitions
 // @param `numTypes`  - the number of types in this ABI definition
-// @param `info`      - information about the data to be selected
+// @param `tupleInfo` - information about the tuple item
+// @param `paramInfo` - information about the parameter we want inside the tuple
 // @param `in`        - Buffer containin the input data
 // @param `inSz`      - Size of `in`
-// @return            - number of bytes written to `out`; 0 on error.
-size_t abi_get_param_sz(const ABI_t * types, 
-                        size_t numTypes, 
-                        ABISelector_t info, 
-                        const void * in, 
-                        size_t inSz);
+// @return            - Size of array dimension; 0 on error.
+size_t abi_get_tuple_param_array_sz(const ABI_t * types, 
+                                    size_t numTypes, 
+                                    ABISelector_t tupleInfo,
+                                    ABISelector_t paramInfo, 
+                                    const void * in,
+                                    size_t inSz);
 
 // Decode and return a param's data in `out` given a set of ABI types and an `in` buffer.
 // Note that padding is stripped from elementary types, which are encoded in 32-byte words regardless
@@ -179,5 +207,25 @@ size_t abi_decode_param(void * out,
                         ABISelector_t info, 
                         const void * in,
                         size_t inSz);
+
+// Perform `abi_decode_param` on a parameter nested in a tuple struct.
+// Tuple data is encoded as if it is its own definition and is offset like dynamic data.
+// @param `out`       - output buffer to be written
+// @param `outSz`     - size of output buffer to be written
+// @param `types`     - all types in the larger ABI definition
+// @param `numTypes`  - number of types in the larger ABI definition
+// @param `tupleInfo` - information about the tuple param (i.e. one of the root params)
+// @param `paramInfo` - information about the param inside the tuple
+// @param `in`        - Buffer containin the input data
+// @param `inSz`      - Size of `in`
+// @return            - number of bytes written to `out`; 0 on error.
+size_t abi_decode_tuple_param(void * out, 
+                              size_t outSz, 
+                              const ABI_t * types, 
+                              size_t numTypes,
+                              ABISelector_t tupleInfo,
+                              ABISelector_t paramInfo, 
+                              const void * in,
+                              size_t inSz);
 
 #endif
