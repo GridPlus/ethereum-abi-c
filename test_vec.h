@@ -1730,3 +1730,14 @@ uint8_t tupleVarArray4_p0_t1_p1[20] = {
   0xce, 0xff, 0x4e, 0xb8, 0xb7, 0x8f, 0x55, 0x6a, 0x82, 0x78, 0x99, 0x00, 0x71, 0xb2, 0x56, 0xb4, 
   0x8d, 0x9f, 0x04, 0x05
 };
+
+// (bool, address),(bool,bool),bool
+ABI_t fail_tupleMulti_abi[7] = {
+  { .type = ABI_TUPLE2, },
+  { .type = ABI_TUPLE2, },
+  { .type = ABI_BOOL },
+  { .type = ABI_BOOL },
+  { .type = ABI_ADDRESS },
+  { .type = ABI_BOOL },
+  { .type = ABI_BOOL },
+};

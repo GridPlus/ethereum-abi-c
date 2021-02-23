@@ -11,12 +11,12 @@
 //===============================================================
 
 // Keep this in case it is needed later for debuggin
-static void print_data(uint8_t * in, size_t sz) {
-  for (size_t i = 0; i < sz; i++) {
-    printf("0x%x, ", in[i]);
-  }
-  printf("\n\r");
-}
+// static void print_data(uint8_t * in, size_t sz) {
+//   for (size_t i = 0; i < sz; i++) {
+//     printf("0x%x, ", in[i]);
+//   }
+//   printf("\n\r");
+// }
 
 static inline uint32_t get_u32_be(uint8_t * in, size_t off) {
   return (in[off + 3] | in[off + 2] << 8 | in[off + 1] << 16 | in[off + 0] << 24);
@@ -1284,6 +1284,9 @@ static inline void test_failures(uint8_t * out, size_t outSz) {
   assert(abi_decode_param(out, outSz, ex5_abi, ARRAY_SIZE(ex5_abi), info, in, inSz) > 0);
   info.arrIdx = 3;
   assert(abi_decode_param(out, outSz, ex5_abi, ARRAY_SIZE(ex5_abi), info, in, inSz) == 0);
+  // Fail if more than one tuple is specified in the definition
+  assert(false == abi_is_valid_schema(fail_tupleMulti_abi, ARRAY_SIZE(fail_tupleMulti_abi)));
+
 }
 
 int main() {

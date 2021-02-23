@@ -7,7 +7,6 @@
 //===============================================
 // HELPERS
 //===============================================
-
 // Get the u32 that is represented in big endian in a 32 byte word (i.e. last 4 bytes).
 // Returns a little endian numerical representation of bytes loc+29:loc+32.
 static uint32_t get_abi_u32_be(const void * in, size_t loc) {
@@ -373,6 +372,19 @@ size_t get_tuple_data_start(const ABI_t * types, size_t numTypes, ABISelector_t 
   return dataOff;
 }
 
+// Temporary: To avoid more complexity we will only support definitions with
+// a single tuple for now. Multi-tuple support maybe later if there is demand.
+static bool __has_multiple_tuples(const ABI_t * types, size_t numTypes) {
+  while (!types);
+  size_t tupleCount = 0;
+  for (size_t i = 0; i < numTypes; i++) {
+    if (true == is_tuple_type(types[i]))
+      tupleCount ++;
+  }
+  return tupleCount > 1;
+}
+
+
 //===============================================
 // API
 //===============================================
@@ -388,6 +400,10 @@ size_t get_tuple_sz(ABI_t t) {
 
 bool abi_is_valid_schema(const ABI_t * types, size_t numTypes) {
   while(types == NULL);
+  // For now we cannot support multiple tuple types
+  if (true == __has_multiple_tuples(types, numTypes))
+    return false;
+
   for (size_t i = 0; i < numTypes; i++) {
     if ((types[i].type >= ABI_MAX || types[i].type <= ABI_NONE) ||
         ( (false == is_single_elementary_type(types[i])) &&
