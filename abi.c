@@ -91,19 +91,13 @@ static bool is_dynamic_type_variable_sz_array(ABI_t type) {
           (is_variable_sz_array(type)));
 }
 
+// Get the index of the first param nested inside of the specified tuple.
+// Nested tuple params are appended to the end of the `types` array and are appened
+// in the order of the tuples containing them.
 static size_t get_first_tuple_param_idx(const ABI_t * types, size_t numTypes, size_t tupleIdx) {
   while(types == NULL);
   if (false == is_tuple_type(types[tupleIdx]) || tupleIdx > numTypes)
     return 0;
-  // Determine if there are other tuples that come after this one.
-  // All tuple params are placed at the end of the param list in order
-  // of the tuple types that define them.
-  size_t toSkip = 0;
-  for (size_t i = 0; i < numTypes; i++) {
-    // If there are tuples after this one, we need to skip those types
-    if (i > tupleIdx && is_tuple_type(types[i]))
-      toSkip += get_tuple_sz(types[i]);
-  }
   return numTypes - get_tuple_sz(types[tupleIdx]);
 }
 
@@ -345,7 +339,8 @@ size_t get_tuple_data_start(const ABI_t * types, size_t numTypes, ABISelector_t 
     if (tupleInfo.arrIdx >= get_abi_u32_be(in, paramOff))
       return 0;
     // Now find the second offset that jumps us to the start of the tuple item we want.
-    if (true == tuple_has_dynamic_type(types, numTypes, tupleInfo.typeIdx) || true == tuple_has_variable_sz_elem_arr(types, numTypes, tupleInfo.typeIdx)) {
+    if ((true == tuple_has_dynamic_type(types, numTypes, tupleInfo.typeIdx)) || 
+        (true == tuple_has_variable_sz_elem_arr(types, numTypes, tupleInfo.typeIdx))) {
       dataOff += get_abi_u32_be(in, dataOff + (tupleInfo.arrIdx * ABI_WORD_SZ));
     } else {
       size_t tupleSz = get_tuple_sz(tupleType);
