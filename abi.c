@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
+
 //===============================================
 // HELPERS
 //===============================================
@@ -328,7 +328,6 @@ size_t get_tuple_data_start(const ABI_t * types, size_t numTypes, ABISelector_t 
   size_t dataOff = get_param_offset(types, numTypes, tupleInfo, in, inSz);
   if (dataOff > inSz)
     return 0;
-  printf("paramOffset %d\n\r", (int)get_param_offset(types, numTypes, tupleInfo, in, inSz));
   ABI_t tupleType = types[tupleInfo.typeIdx];
   if (true == is_variable_sz_array(tupleType)) {
     // The first word here is the size of the tuple array. 
@@ -372,19 +371,6 @@ size_t get_tuple_data_start(const ABI_t * types, size_t numTypes, ABISelector_t 
   }
   return dataOff;
 }
-
-// Temporary: To avoid more complexity we will only support definitions with
-// a single tuple for now. Multi-tuple support maybe later if there is demand.
-static bool __has_multiple_tuples(const ABI_t * types, size_t numTypes) {
-  while (!types);
-  size_t tupleCount = 0;
-  for (size_t i = 0; i < numTypes; i++) {
-    if (true == is_tuple_type(types[i]))
-      tupleCount ++;
-  }
-  return tupleCount > 1;
-}
-
 
 //===============================================
 // API
@@ -492,30 +478,28 @@ size_t abi_decode_tuple_param(void * out,
       (false == abi_is_valid_schema(types, numTypes)))
     return 0;
   ABI_t tupleType = types[tupleInfo.typeIdx];
+  size_t tupleTypeSz = get_tuple_sz(tupleType);
   // Sanity check: ensure this is a tuple type
   if (false == is_tuple_type(tupleType))
+    return 0;
+  // Sanity check: ensure we won't overrun our buffer
+  if ((paramInfo.typeIdx > tupleTypeSz) || 
+      (paramInfo.typeIdx > numTypes))
     return 0;
 
   // Update types pointer offset to skip non-tuple types. This allows us to treat
   // the tuple as its own sort of "nested" definition.
-  size_t numTupleTypes = (tupleType.type - ABI_TUPLE1) + 1;
-  const ABI_t * tupleTypes = types + (numTypes - numTupleTypes);
-
-  // Sanity check: ensure we won't overrun our buffer
-  if (paramInfo.typeIdx > numTupleTypes || paramInfo.typeIdx > numTypes)
-    return 0;
+  const ABI_t * tupleTypes = types + get_first_tuple_param_idx(types, numTypes, tupleInfo.typeIdx);
 
   // Get the offset at which the tuple data starts
   size_t dataOff = get_tuple_data_start(types, numTypes, tupleInfo, in, inSz);
-  // printf("dataOff %d\n\r", (int)dataOff);
-
   // Jump to the start of our tuple item
   in += dataOff;
   inSz -= dataOff;
   return abi_decode_param(out, 
                           outSz, 
                           tupleTypes, 
-                          numTupleTypes,
+                          tupleTypeSz,
                           paramInfo,
                           in,
                           inSz);

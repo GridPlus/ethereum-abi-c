@@ -1273,12 +1273,29 @@ static inline void test_tupleMulti1(uint8_t * out, size_t outSz) {
   memset(out, 0, outSz);
 
   // Tuple types
-  info.typeIdx = 1;
+  info.typeIdx = 0;
   ABISelector_t paramInfo = { .typeIdx = 0 };
   decSz = abi_decode_tuple_param( out, outSz, tupleMulti1_abi, ARRAY_SIZE(tupleMulti1_abi), 
                                   info, paramInfo, in, inSz);
   assert(decSz == sizeof(tupleMulti1_p0_0));
-  print_data(out, decSz);
+  assert(0 == memcmp(tupleMulti1_p0_0, out, sizeof(tupleMulti1_p0_0)));
+  paramInfo.typeIdx = 1;
+  decSz = abi_decode_tuple_param( out, outSz, tupleMulti1_abi, ARRAY_SIZE(tupleMulti1_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleMulti1_p0_1));
+  assert(0 == memcmp(tupleMulti1_p0_1, out, sizeof(tupleMulti1_p0_1)));
+  paramInfo.typeIdx = 0;
+  info.typeIdx = 1;
+  decSz = abi_decode_tuple_param( out, outSz, tupleMulti1_abi, ARRAY_SIZE(tupleMulti1_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleMulti1_p1_0));
+  assert(0 == memcmp(tupleMulti1_p1_0, out, sizeof(tupleMulti1_p1_0)));
+  paramInfo.typeIdx = 1;
+  decSz = abi_decode_tuple_param( out, outSz, tupleMulti1_abi, ARRAY_SIZE(tupleMulti1_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleMulti1_p1_1));
+  assert(0 == memcmp(tupleMulti1_p1_1, out, sizeof(tupleMulti1_p1_1)));
+  
   printf("passed.\n\r");
 }
 
