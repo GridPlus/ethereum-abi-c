@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <stdio.h>
 //===============================================
 // HELPERS
 //===============================================
@@ -282,27 +282,31 @@ static size_t get_param_offset( const ABI_t * types,
     // Note the -1, which accounts for the param in this slot. If this was a normal
     // param it would take up 1 word.
     ABI_t _type = types[i];
-    if ((true == is_elementary_type_fixed_sz_array(_type)) && 
-        (false == is_tuple_type(_type))) {
-      off += ABI_WORD_SZ * (_type.arraySz - 1);
+    if ((true == is_elementary_type_fixed_sz_array(_type)) && (false == is_tuple_type(_type))) {
+      // Elementary type fixed sz arrays have all params in the header data
+      off += ABI_WORD_SZ * _type.arraySz;
     } else if ( (true == is_tuple_type(_type)) &&
-                (false == tuple_has_dynamic_type(types, numTypes, i) &&
-                (false == is_variable_sz_array(_type))
-                )) {
+                (false == tuple_has_dynamic_type(types, numTypes, i)) &&
+                (false == tuple_has_variable_sz_elem_arr(types, numTypes, i)) &&
+                (false == is_variable_sz_array(_type)) ) {
       // Tuples without dynamic types have all params up front.
       size_t tsz = get_tuple_sz(_type);
-      off += ABI_WORD_SZ * ((_type.isArray ? _type.arraySz * tsz : tsz) - 1);
+      off += ABI_WORD_SZ * (_type.isArray ? _type.arraySz * tsz : tsz);
+    } else {
+      // Other types are just words in the header data
+      off += ABI_WORD_SZ;
     }
   }
-  // Dynamic types and variable sized arrays of any type are located at 
-  // their respective offsets
-  if ((true == is_dynamic_atomic_type(type)) || 
-      (true == is_variable_sz_array(type)))
-    paramOff = get_abi_u32_be(in, off + (ABI_WORD_SZ * info.typeIdx));
-  // All other parameters are located in the header
-  else
-    paramOff = off + (ABI_WORD_SZ * info.typeIdx);
-
+  if (true == tuple_has_variable_sz_elem_arr(types, numTypes, info.typeIdx)) {
+    paramOff = get_abi_u32_be(in, off);
+  } else if ((true == is_dynamic_atomic_type(type)) || (true == is_variable_sz_array(type))) {
+    // Dynamic types and variable sized arrays of any type are located at 
+    // their respective offsets
+    paramOff = get_abi_u32_be(in, off);
+  } else {
+    // All other parameters are located in the header
+    paramOff = off;
+  }
   // Fixed size elementary type arrays are a special case. The offset we have corresponds
   // to the first param in the array so we just need to skip words to locate the individual
   // item we want.
@@ -366,8 +370,11 @@ size_t get_tuple_data_start(const ABI_t * types, size_t numTypes, ABISelector_t 
     // Fixed size tuple arrays with all elementary types are treated like normal
     // fixed size arrays of individual elementary types, i.e. the data is all serialized
     // in the header params.
-    // dataOff += (tupleInfo.typeIdx + (tupleInfo.arrIdx * get_tuple_sz(tupleType))) * ABI_WORD_SZ;
-    dataOff += (tupleInfo.arrIdx * get_tuple_sz(tupleType)) * ABI_WORD_SZ;
+    if (tuple_has_variable_sz_elem_arr(types, numTypes, tupleInfo.typeIdx)) {
+      dataOff += get_abi_u32_be(in, dataOff + (tupleInfo.arrIdx * ABI_WORD_SZ)); 
+    } else {
+      dataOff += (tupleInfo.arrIdx * get_tuple_sz(tupleType)) * ABI_WORD_SZ;
+    }
   }
   return dataOff;
 }
