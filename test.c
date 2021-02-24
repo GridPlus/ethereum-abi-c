@@ -11,12 +11,12 @@
 //===============================================================
 
 // Keep this in case it is needed later for debuggin
-// static void print_data(uint8_t * in, size_t sz) {
-//   for (size_t i = 0; i < sz; i++) {
-//     printf("0x%x, ", in[i]);
-//   }
-//   printf("\n\r");
-// }
+static void print_data(uint8_t * in, size_t sz) {
+  for (size_t i = 0; i < sz; i++) {
+    printf("0x%x, ", in[i]);
+  }
+  printf("\n\r");
+}
 
 static inline uint32_t get_u32_be(uint8_t * in, size_t off) {
   return (in[off + 3] | in[off + 2] << 8 | in[off + 1] << 16 | in[off + 0] << 24);
@@ -1255,6 +1255,34 @@ static inline void test_tupleVarArray4(uint8_t * out, size_t outSz) {
   printf("passed.\n\r");
 }
 
+static inline void test_tupleMulti1(uint8_t * out, size_t outSz) {
+  ABISelector_t info = { .typeIdx = 0 };
+  uint8_t * in = tupleMulti1_encoded;
+  size_t inSz = sizeof(tupleMulti1_encoded);
+  printf("(Tuple) tupleMulti1_encoded...");
+  size_t decSz;
+
+  assert(true == abi_is_valid_schema(tupleMulti1_abi, ARRAY_SIZE(tupleMulti1_abi)));
+
+  // Non-tuple params
+  info.typeIdx = 2;
+  decSz = abi_decode_param( out, outSz, tupleMulti1_abi, ARRAY_SIZE(tupleMulti1_abi), 
+                            info, in, inSz);
+  assert(decSz == sizeof(tupleMulti1_p2));
+  assert(0 == memcmp(tupleMulti1_p2, out, sizeof(tupleMulti1_p2)));
+  memset(out, 0, outSz);
+
+  // Tuple types
+  info.typeIdx = 1;
+  ABISelector_t paramInfo = { .typeIdx = 0 };
+  decSz = abi_decode_tuple_param( out, outSz, tupleMulti1_abi, ARRAY_SIZE(tupleMulti1_abi), 
+                                  info, paramInfo, in, inSz);
+  assert(decSz == sizeof(tupleMulti1_p0_0));
+  print_data(out, decSz);
+  printf("passed.\n\r");
+}
+
+
 static inline void test_failures(uint8_t * out, size_t outSz) {
   // Confirm bad schemas are rejected
   ABI_t fail_ex1_abi[1] = {
@@ -1284,9 +1312,6 @@ static inline void test_failures(uint8_t * out, size_t outSz) {
   assert(abi_decode_param(out, outSz, ex5_abi, ARRAY_SIZE(ex5_abi), info, in, inSz) > 0);
   info.arrIdx = 3;
   assert(abi_decode_param(out, outSz, ex5_abi, ARRAY_SIZE(ex5_abi), info, in, inSz) == 0);
-  // Fail if more than one tuple is specified in the definition
-  assert(false == abi_is_valid_schema(fail_tupleMulti_abi, ARRAY_SIZE(fail_tupleMulti_abi)));
-
 }
 
 int main() {
@@ -1317,6 +1342,7 @@ int main() {
   test_tupleVarArray2(out, sizeof(out));
   test_tupleVarArray3(out, sizeof(out));
   test_tupleVarArray4(out, sizeof(out));
+  test_tupleMulti1(out, sizeof(out));
   test_failures(out, sizeof(out));
 
   printf("=============================\n\r");
