@@ -133,6 +133,20 @@ static bool tuple_has_variable_sz_elem_arr(const ABI_t * types, size_t numTypes,
   return false;
 }
 
+
+static bool tuple_has_fixed_sz_elem_arr(const ABI_t * types, size_t numTypes, size_t idx) {
+  while(types == NULL);
+  if (false == is_tuple_type(types[idx]))
+    return false;
+  size_t firstParamIdx = get_first_tuple_param_idx(types, numTypes, idx);
+  size_t numParams = get_tuple_sz(types[idx]);
+  for (size_t i = firstParamIdx; i < firstParamIdx + numParams; i++) {
+    if (true == is_elementary_type_fixed_sz_array(types[i]))
+      return true;
+  }
+  return false;
+}
+
 // Get the number of bytes describing an elementary data type
 static size_t elem_sz(ABI_t t) {
   if (true == is_dynamic_atomic_type(t))
@@ -275,6 +289,7 @@ static size_t get_param_offset( const ABI_t * types,
   ABI_t type = types[info.typeIdx];
   size_t off = 0;
   size_t paramOff = 0;
+
   // Fixed size elementary type arrays pack everything into the header data, i.e.
   // do not come with an offset to the param. If such a param comes before our target
   // param we need to sufficiently skip over it.
@@ -282,13 +297,48 @@ static size_t get_param_offset( const ABI_t * types,
     // Note the -1, which accounts for the param in this slot. If this was a normal
     // param it would take up 1 word.
     ABI_t _type = types[i];
-    if ((true == is_elementary_type_fixed_sz_array(_type)) && (false == is_tuple_type(_type))) {
+
+    bool is_tuple_without_dynamic_type_and_not_var_sz_arr = (
+      (true == is_tuple_type(_type)) &&
+      (false == tuple_has_dynamic_type(types, numTypes, i)) &&
+      (false == is_variable_sz_array(_type))
+    );
+
+    bool is_tuple_without_var_array_or_dynamic_params = (
+      (true == is_tuple_without_dynamic_type_and_not_var_sz_arr) &&
+      (false == tuple_has_variable_sz_elem_arr(types, numTypes, i))
+    );
+
+    bool is_tuple_with_fixed_elem_array_and_not_var_arr = (
+      (true == is_tuple_without_var_array_or_dynamic_params) &&
+      (true == tuple_has_fixed_sz_elem_arr(types, numTypes, i))
+    );
+
+    bool is_non_tuple_fixed_elem_array = (
+      (true == is_elementary_type_fixed_sz_array(_type)) && 
+      (false == is_tuple_type(_type))
+    );
+    if (is_non_tuple_fixed_elem_array) {
       // Elementary type fixed sz arrays have all params in the header data
       off += ABI_WORD_SZ * _type.arraySz;
-    } else if ( (true == is_tuple_type(_type)) &&
-                (false == tuple_has_dynamic_type(types, numTypes, i)) &&
-                (false == tuple_has_variable_sz_elem_arr(types, numTypes, i)) &&
-                (false == is_variable_sz_array(_type)) ) {
+    } else if (is_tuple_with_fixed_elem_array_and_not_var_arr) {
+      // Tuples with fixed arrays and no dynamic params or variable arrays are
+      // not represented by offsets -- they have all their params packed into the
+      // header data.
+      size_t startIdx = get_first_tuple_param_idx(types, numTypes, i);
+      size_t numWords = 0;
+      for (size_t j = startIdx; j < startIdx + get_tuple_sz(_type); j++) {
+        if (true == is_elementary_type_array(types[j]) && true == is_fixed_sz_array(types[j])) {
+          numWords += types[j].arraySz;
+        } else {
+          numWords++;
+        }
+      }
+      size_t arrMult = 1;
+      if (_type.isArray && _type.arraySz > 0)
+        arrMult = _type.arraySz;
+      off += arrMult * numWords * ABI_WORD_SZ;
+    } else if (is_tuple_without_var_array_or_dynamic_params) {
       // Tuples without dynamic types have all params up front.
       size_t tsz = get_tuple_sz(_type);
       off += ABI_WORD_SZ * (_type.isArray ? _type.arraySz * tsz : tsz);
@@ -297,7 +347,8 @@ static size_t get_param_offset( const ABI_t * types,
       off += ABI_WORD_SZ;
     }
   }
-  if (true == tuple_has_variable_sz_elem_arr(types, numTypes, info.typeIdx)) {
+  if ((true == tuple_has_variable_sz_elem_arr(types, numTypes, info.typeIdx)) && 
+      (false == tuple_has_dynamic_type(types, numTypes, info.typeIdx)) ) {
     paramOff = get_abi_u32_be(in, off);
   } else if ((true == is_dynamic_atomic_type(type)) || (true == is_variable_sz_array(type))) {
     // Dynamic types and variable sized arrays of any type are located at 
@@ -360,10 +411,9 @@ size_t get_tuple_data_start(const ABI_t * types, size_t numTypes, ABISelector_t 
     }
   } else if (true == tuple_has_dynamic_type(types, numTypes, tupleInfo.typeIdx)) {
     // Any tuple that has a dynamic type is represented by an offset to its data
-    // dataOff += get_abi_u32_be(in, tupleInfo.typeIdx * ABI_WORD_SZ);
     dataOff = get_abi_u32_be(in, dataOff);
-    // If this is a fixed sz array we need to jump to the array index
     if (true == is_fixed_sz_array(tupleType)) {
+      // If this is a fixed sz array we need to jump to the array index
       dataOff += get_abi_u32_be(in, dataOff + (tupleInfo.arrIdx * ABI_WORD_SZ));
     }
   } else if (true == is_fixed_sz_array(tupleType)) {
@@ -444,11 +494,17 @@ size_t abi_get_tuple_param_array_sz(const ABI_t * types,
       (false == abi_is_valid_schema(types, numTypes)) ||
       (false == is_variable_sz_array(type)) )
     return 0;
-  // Get to the start of this tuple's data
+  // Update types pointer offset to skip non-tuple types. This allows us to treat
+  // the tuple as its own sort of "nested" definition.
+  size_t firstTupleParamIdx = get_first_tuple_param_idx(types, numTypes, tupleInfo.typeIdx);
+  const ABI_t * tupleTypes = types + firstTupleParamIdx;
+  // Get the offset at which the tuple data starts
   size_t dataOff = get_tuple_data_start(types, numTypes, tupleInfo, in, inSz);
-  // We are at a jump that points to the array size
-  dataOff += get_abi_u32_be(in, dataOff);
-  return get_abi_u32_be(in, dataOff);
+  // Jump to the start of our tuple item
+  in += dataOff;
+  inSz -= dataOff;
+  size_t paramOff = get_param_offset(tupleTypes, (numTypes - firstTupleParamIdx), paramInfo, in, inSz);
+  return get_abi_u32_be(in, paramOff);
 }
 
 size_t abi_decode_param(void * out, 
@@ -493,7 +549,6 @@ size_t abi_decode_tuple_param(void * out,
   if ((paramInfo.typeIdx > tupleTypeSz) || 
       (paramInfo.typeIdx > numTypes))
     return 0;
-
   // Update types pointer offset to skip non-tuple types. This allows us to treat
   // the tuple as its own sort of "nested" definition.
   const ABI_t * tupleTypes = types + get_first_tuple_param_idx(types, numTypes, tupleInfo.typeIdx);
