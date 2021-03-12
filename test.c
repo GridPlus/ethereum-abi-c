@@ -13,6 +13,8 @@
 // Keep this in case it is needed later for debuggin
 static void print_data(uint8_t * in, size_t sz) {
   for (size_t i = 0; i < sz; i++) {
+    if (i % ABI_WORD_SZ == 0 && i > 0)
+      printf("\n\r");
     printf("0x%x, ", in[i]);
   }
   printf("\n\r");
@@ -2024,6 +2026,12 @@ static inline void test_enc(uint8_t * out, size_t outSz) {
   assert(sizeof(enc_ex1_encoded) == encSz);
   assert(0 == memcmp(out, enc_ex1_encoded, sizeof(enc_ex1_encoded)));
   memset(out, 0, outSz);
+
+  encSz = abi_encode( out, outSz, enc_ex2_abi, ARRAY_SIZE(enc_ex2_abi), 
+                      enc_ex2_offsets, enc_ex2_params, sizeof(enc_ex2_params));
+  assert(sizeof(enc_ex2_encoded) == encSz);
+  assert(0 == memcmp(out, enc_ex2_encoded, sizeof(enc_ex2_encoded)));
+  memset(out, 0, outSz);
   printf("passed.\n\r");
 }
 
@@ -2064,7 +2072,7 @@ int main() {
   printf("=============================\n\r");
   printf(" RUNNING ABI TESTS...\n\r");
   printf("=============================\n\r");
-  uint8_t out[200] = {0};
+  uint8_t out[500] = {0};
   test_ex1(out, sizeof(out));
   test_ex2(out, sizeof(out));
   test_ex3(out, sizeof(out));

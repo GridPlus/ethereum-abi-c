@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <stdio.h>
+
 //===============================================
 // HELPERS
 //===============================================
@@ -13,6 +15,13 @@ static uint32_t get_abi_u32_be(const void * in, size_t loc) {
   const uint8_t * inPtr = in;
   size_t l = loc + 32;
   return inPtr[l-1] | inPtr[l-2] << 8 | inPtr[l-3] << 16 | inPtr[l-4] << 24;
+}
+
+static void write_u32_be(void * out, uint32_t n) {
+  ((uint8_t*)out)[0] = (uint8_t)((n >> 24) & 0xff);
+  ((uint8_t*)out)[1] = (uint8_t)((n >> 16) & 0xff);
+  ((uint8_t*)out)[2] = (uint8_t)((n >> 8) & 0xff);
+  ((uint8_t*)out)[3] = (uint8_t)((n >> 0) & 0xff);
 }
 
 static bool is_fixed_bytes_type(ABI_t t) {
@@ -578,7 +587,7 @@ size_t abi_encode(void * out,
   while (!out || !types || !in);
   if (numTypes == 0 || outSz == 0 || inSz == 0 || (false == abi_is_valid_schema(types, numTypes)))
     return 0;
-  size_t off = 0;
+  size_t numWritten = 0;
   size_t dynamicCount = 0;
   for (size_t i = 0; i < numTypes; i++) {
     void * loc = out + (ABI_WORD_SZ * i);
@@ -601,7 +610,7 @@ size_t abi_encode(void * out,
     }
 
     // Avoid overrunning the buffer
-    if (off + _sz > outSz)
+    if ((ABI_WORD_SZ * i) + _sz > outSz)
       return 0;
 
     // Write the param
@@ -609,28 +618,26 @@ size_t abi_encode(void * out,
       // Dynamic types go at the end of the buffer
       // Write the offset in the buffer in this slot (in big endian)
       size_t dynamicDataOff = (size_t) ABI_WORD_SZ * (numTypes + dynamicCount);
-      ((uint8_t*)loc)[ABI_WORD_SZ - 4] = (uint8_t)((dynamicDataOff >> 24) & 0xff);
-      ((uint8_t*)loc)[ABI_WORD_SZ - 3] = (uint8_t)((dynamicDataOff >> 16) & 0xff);
-      ((uint8_t*)loc)[ABI_WORD_SZ - 2] = (uint8_t)((dynamicDataOff >> 8) & 0xff);
-      ((uint8_t*)loc)[ABI_WORD_SZ - 1] = (uint8_t)((dynamicDataOff >> 0) & 0xff);
-
+      write_u32_be((loc+ABI_WORD_SZ-4), dynamicDataOff);
+      // Write the data size at the edge of teh buffer
+      write_u32_be((out+dynamicDataOff+ABI_WORD_SZ-4), _sz);
       // Write the data at the end of the buffer
-      memcpy(out + dynamicDataOff, in+_off, _sz);
+      memcpy((out+dynamicDataOff+ABI_WORD_SZ), in+_off, _sz);
       // Account for the number of words we just wrote. If the data exceeds one word,
       // it will wrap into another.
-      size_t numWords = 1 + (_sz / ABI_WORD_SZ);
+      size_t numWords = 2 + (_sz / ABI_WORD_SZ); // 2 accounts for the size word
       dynamicCount += numWords;
-      off += numWords * ABI_WORD_SZ;
+      numWritten += numWords * ABI_WORD_SZ;
     } else {
       // All other params are written to the location
       // Bytes types are written to the front of the word. All others are left padded.
-      size_t outOff = _off;
+      size_t outOff = 0;
       if (false == is_fixed_bytes_type(types[i]))
         outOff += (ABI_WORD_SZ - _sz);
-      memcpy((out+off), (in+outOff), _sz);
-      off += ABI_WORD_SZ;
+      memcpy((loc+outOff), (in+_off), _sz);
     }
+    numWritten += ABI_WORD_SZ;
   }
 
-  return off;
+  return numWritten;
 }
