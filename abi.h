@@ -228,4 +228,23 @@ size_t abi_decode_tuple_param(void * out,
                               const void * in,
                               size_t inSz);
 
+// Encode a payload given a set of types. 
+// All parameter data should be tightly packed in `in`. Numbers are expected to be little endian buffers.
+// NOTE: This has significant limitations at the moment. Tuples and arrays are NOT supported.
+// @param `out`       - output buffer to be written
+// @param `outSz`     - size of output buffer to be written
+// @param `types`     - all types in the larger ABI definition
+// @param `numTypes`  - number of types in the larger ABI definition
+// @param `offsets`   - list of size `numTypes` containin offsets for the types' data in `in`
+// @param `in`        - Buffer containin the input data
+// @param `inSz`      - Size of `in`
+// @return            - number of bytes written to `out`; 0 on error.
+size_t abi_encode(void * out, 
+                  size_t outSz, 
+                  const ABI_t * types, 
+                  size_t numTypes, 
+                  size_t * offsets, 
+                  const void * in, 
+                  size_t inSz);
+
 #endif

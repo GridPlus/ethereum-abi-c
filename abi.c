@@ -566,3 +566,71 @@ size_t abi_decode_tuple_param(void * out,
                           in,
                           inSz);
 }
+
+size_t abi_encode(void * out, 
+                  size_t outSz, 
+                  const ABI_t * types, 
+                  size_t numTypes, 
+                  size_t * offsets, 
+                  const void * in, 
+                  size_t inSz)
+{
+  while (!out || !types || !in);
+  if (numTypes == 0 || outSz == 0 || inSz == 0 || (false == abi_is_valid_schema(types, numTypes)))
+    return 0;
+  size_t off = 0;
+  size_t dynamicCount = 0;
+  for (size_t i = 0; i < numTypes; i++) {
+    void * loc = out + (ABI_WORD_SZ * i);
+
+    // TODO: Expand coverage beyond simplisitc types (if demand requires it)
+    // Sanity check on the type -- make sure it is allowed
+    if (is_tuple_type(types[i]) || types[i].isArray)
+      return 0;
+
+    // Get the size of the data
+    size_t _sz = 0;
+    size_t _off = offsets[i];
+    if (i < numTypes - 1) {
+      if (offsets[i+1] <= _off) // Ensure offsets increase monotonically
+        return 0;
+      _sz = offsets[i+1] - _off;
+    } else {
+      // Last offset can be compared against inSz
+      _sz = inSz - _off;
+    }
+
+    // Avoid overrunning the buffer
+    if (off + _sz > outSz)
+      return 0;
+
+    // Write the param
+    if (is_dynamic_atomic_type(types[i])) {
+      // Dynamic types go at the end of the buffer
+      // Write the offset in the buffer in this slot (in big endian)
+      size_t dynamicDataOff = (size_t) ABI_WORD_SZ * (numTypes + dynamicCount);
+      ((uint8_t*)loc)[ABI_WORD_SZ - 4] = (uint8_t)((dynamicDataOff >> 24) & 0xff);
+      ((uint8_t*)loc)[ABI_WORD_SZ - 3] = (uint8_t)((dynamicDataOff >> 16) & 0xff);
+      ((uint8_t*)loc)[ABI_WORD_SZ - 2] = (uint8_t)((dynamicDataOff >> 8) & 0xff);
+      ((uint8_t*)loc)[ABI_WORD_SZ - 1] = (uint8_t)((dynamicDataOff >> 0) & 0xff);
+
+      // Write the data at the end of the buffer
+      memcpy(out + dynamicDataOff, in+_off, _sz);
+      // Account for the number of words we just wrote. If the data exceeds one word,
+      // it will wrap into another.
+      size_t numWords = 1 + (_sz / ABI_WORD_SZ);
+      dynamicCount += numWords;
+      off += numWords * ABI_WORD_SZ;
+    } else {
+      // All other params are written to the location
+      // Bytes types are written to the front of the word. All others are left padded.
+      size_t outOff = _off;
+      if (false == is_fixed_bytes_type(types[i]))
+        outOff += (ABI_WORD_SZ - _sz);
+      memcpy((out+off), (in+outOff), _sz);
+      off += ABI_WORD_SZ;
+    }
+  }
+
+  return off;
+}

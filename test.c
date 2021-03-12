@@ -11,12 +11,12 @@
 //===============================================================
 
 // Keep this in case it is needed later for debuggin
-// static void print_data(uint8_t * in, size_t sz) {
-//   for (size_t i = 0; i < sz; i++) {
-//     printf("0x%x, ", in[i]);
-//   }
-//   printf("\n\r");
-// }
+static void print_data(uint8_t * in, size_t sz) {
+  for (size_t i = 0; i < sz; i++) {
+    printf("0x%x, ", in[i]);
+  }
+  printf("\n\r");
+}
 
 static inline uint32_t get_u32_be(uint8_t * in, size_t off) {
   return (in[off + 3] | in[off + 2] << 8 | in[off + 1] << 16 | in[off + 0] << 24);
@@ -2016,7 +2016,16 @@ static inline void test_tupleMulti14(uint8_t * out, size_t outSz) {
   printf("passed.\n\r");
 };
 
-
+static inline void test_enc(uint8_t * out, size_t outSz) {
+  printf("Encoding...");
+  size_t encSz = 0;
+  encSz = abi_encode( out, outSz, enc_ex1_abi, ARRAY_SIZE(enc_ex1_abi), 
+                      enc_ex1_offsets, enc_ex1_params, sizeof(enc_ex1_params));
+  assert(sizeof(enc_ex1_encoded) == encSz);
+  assert(0 == memcmp(out, enc_ex1_encoded, sizeof(enc_ex1_encoded)));
+  memset(out, 0, outSz);
+  printf("passed.\n\r");
+}
 
 static inline void test_failures(uint8_t * out, size_t outSz) {
   printf("Testing failures...");
@@ -2093,6 +2102,7 @@ int main() {
   test_tupleMulti12(out, sizeof(out));
   test_tupleMulti13(out, sizeof(out));
   test_tupleMulti14(out, sizeof(out));
+  test_enc(out, sizeof(out));
   test_failures(out, sizeof(out));
 
   printf("=============================\n\r");
