@@ -2032,6 +2032,25 @@ static inline void test_enc(uint8_t * out, size_t outSz) {
   assert(sizeof(enc_ex2_encoded) == encSz);
   assert(0 == memcmp(out, enc_ex2_encoded, sizeof(enc_ex2_encoded)));
   memset(out, 0, outSz);
+
+  encSz = abi_encode( out, outSz, enc_ex3_abi, ARRAY_SIZE(enc_ex3_abi), 
+                      enc_ex3_offsets, enc_ex3_params, sizeof(enc_ex3_params));
+  assert(sizeof(enc_ex3_encoded) == encSz);
+  assert(0 == memcmp(out, enc_ex3_encoded, sizeof(enc_ex3_encoded)));
+  memset(out, 0, outSz);
+
+  encSz = abi_encode( out, outSz, enc_ex4_abi, ARRAY_SIZE(enc_ex4_abi), 
+                      enc_ex4_offsets, enc_ex4_params, sizeof(enc_ex4_params));
+  assert(sizeof(enc_ex4_encoded) == encSz);
+  assert(0 == memcmp(out, enc_ex4_encoded, sizeof(enc_ex4_encoded)));
+  memset(out, 0, outSz);
+
+  encSz = abi_encode( out, outSz, enc_ex5_abi, ARRAY_SIZE(enc_ex5_abi), 
+                      enc_ex5_offsets, enc_ex5_params, sizeof(enc_ex5_params));
+  assert(sizeof(enc_ex5_encoded) == encSz);
+  assert(0 == memcmp(out, enc_ex5_encoded, sizeof(enc_ex5_encoded)));
+  memset(out, 0, outSz);
+
   printf("passed.\n\r");
 }
 
