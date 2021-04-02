@@ -15,6 +15,13 @@ static uint32_t get_abi_u32_be(const void * in, size_t loc) {
   return inPtr[l-1] | inPtr[l-2] << 8 | inPtr[l-3] << 16 | inPtr[l-4] << 24;
 }
 
+static void write_u32_be(void * out, uint32_t n) {
+  ((uint8_t*)out)[0] = (uint8_t)((n >> 24) & 0xff);
+  ((uint8_t*)out)[1] = (uint8_t)((n >> 16) & 0xff);
+  ((uint8_t*)out)[2] = (uint8_t)((n >> 8) & 0xff);
+  ((uint8_t*)out)[3] = (uint8_t)((n >> 0) & 0xff);
+}
+
 static bool is_fixed_bytes_type(ABI_t t) {
   return t.type >= ABI_BYTES1 && t.type <= ABI_BYTES32;
 }
@@ -565,4 +572,70 @@ size_t abi_decode_tuple_param(void * out,
                           paramInfo,
                           in,
                           inSz);
+}
+
+size_t abi_encode(void * out, 
+                  size_t outSz, 
+                  const ABI_t * types, 
+                  size_t numTypes, 
+                  size_t * offsets, 
+                  const void * in, 
+                  size_t inSz)
+{
+  while (!out || !types || !in);
+  if (numTypes == 0 || outSz == 0 || inSz == 0 || (false == abi_is_valid_schema(types, numTypes)))
+    return 0;
+  size_t numWritten = 0;
+  size_t dynamicCount = 0;
+  for (size_t i = 0; i < numTypes; i++) {
+    void * loc = out + (ABI_WORD_SZ * i);
+
+    // TODO: Expand coverage beyond simplisitc types (if demand requires it)
+    // Sanity check on the type -- make sure it is allowed
+    if (is_tuple_type(types[i]) || types[i].isArray)
+      return 0;
+
+    // Get the size of the data
+    size_t _sz = 0;
+    size_t _off = offsets[i];
+    if (i < numTypes - 1) {
+      if (offsets[i+1] <= _off) // Ensure offsets increase monotonically
+        return 0;
+      _sz = offsets[i+1] - _off;
+    } else {
+      // Last offset can be compared against inSz
+      _sz = inSz - _off;
+    }
+
+    // Avoid overrunning the buffer
+    if ((ABI_WORD_SZ * i) + _sz > outSz)
+      return 0;
+
+    // Write the param
+    if (is_dynamic_atomic_type(types[i])) {
+      // Dynamic types go at the end of the buffer
+      // Write the offset in the buffer in this slot (in big endian)
+      size_t dynamicDataOff = (size_t) ABI_WORD_SZ * (numTypes + dynamicCount);
+      write_u32_be((loc+ABI_WORD_SZ-4), dynamicDataOff);
+      // Write the data size at the edge of teh buffer
+      write_u32_be((out+dynamicDataOff+ABI_WORD_SZ-4), _sz);
+      // Write the data at the end of the buffer
+      memcpy((out+dynamicDataOff+ABI_WORD_SZ), in+_off, _sz);
+      // Account for the number of words we just wrote. If the data exceeds one word,
+      // it will wrap into another.
+      size_t numWords = 2 + (_sz / ABI_WORD_SZ); // 2 accounts for the size word
+      dynamicCount += numWords;
+      numWritten += numWords * ABI_WORD_SZ;
+    } else {
+      // All other params are written to the location
+      // Bytes types are written to the front of the word. All others are left padded.
+      size_t outOff = 0;
+      if (false == is_fixed_bytes_type(types[i]))
+        outOff += (ABI_WORD_SZ - _sz);
+      memcpy((loc+outOff), (in+_off), _sz);
+    }
+    numWritten += ABI_WORD_SZ;
+  }
+
+  return numWritten;
 }
