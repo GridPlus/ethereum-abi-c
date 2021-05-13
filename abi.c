@@ -160,28 +160,17 @@ static size_t elem_sz(ABI_t t) {
     return 0;
   if (true == is_fixed_bytes_type(t))
     return 1 + (t.type - ABI_BYTES1);
+  // Numerical types (excluding 256-bit numbers)
+  if (t.type >= ABI_UINT8 && t.type < ABI_UINT256)
+    return 32 - (ABI_UINT256 - t.type);
+  if (t.type >= ABI_INT8 && t.type < ABI_INT256)
+    return 32 - (ABI_INT256 - t.type);
+  // Other types
   switch (t.type) {
-    // Non-numerical
     case ABI_ADDRESS:
       return 20;
     case ABI_BOOL:
       return 1;
-    // Numerical
-    case ABI_UINT8:
-    case ABI_INT8:
-      return 1;
-    case ABI_UINT16:
-    case ABI_INT16:
-      return 2;
-    case ABI_UINT32:
-    case ABI_INT32:
-      return 4;
-    case ABI_UINT64:
-    case ABI_INT64:
-      return 8;
-    case ABI_UINT128:
-    case ABI_INT128:
-      return 16;
     case ABI_UINT256:
     case ABI_INT256:
     case ABI_UINT:
