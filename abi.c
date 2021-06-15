@@ -100,10 +100,10 @@ static bool is_dynamic_type_variable_sz_array(ABI_t type) {
 // Get the index of the first param nested inside of the specified tuple.
 // Nested tuple params are appended to the end of the `types` array and are appened
 // in the order of the tuples containing them.
-static size_t get_first_tuple_param_idx(const ABI_t * types, size_t numTypes, size_t tupleIdx) {
+static int get_first_tuple_param_idx(const ABI_t * types, size_t numTypes, size_t tupleIdx) {
   while(types == NULL);
   if (false == is_tuple_type(types[tupleIdx]) || tupleIdx > numTypes)
-    return 0;
+    return -1;
   size_t toSkip = 0;
   for (size_t i = (tupleIdx + 1); i < numTypes; i++)
     if (true == is_tuple_type(types[i]))
@@ -118,9 +118,13 @@ static bool tuple_has_dynamic_type(const ABI_t * types, size_t numTypes, size_t 
   while(types == NULL);
   if (false == is_tuple_type(types[idx]))
     return false;
-  size_t firstParamIdx = get_first_tuple_param_idx(types, numTypes, idx);
-  size_t numParams = get_tuple_sz(types[idx]);
-  for (size_t i = firstParamIdx; i < firstParamIdx + numParams; i++) {
+  int firstParamIdx = get_first_tuple_param_idx(types, numTypes, idx);
+  if (firstParamIdx < 0)
+    return false;
+  int numParams = get_tuple_sz(types[idx]);
+  if (numParams < 0)
+    return false;
+  for (int i = firstParamIdx; i < firstParamIdx + numParams; i++) {
     if (true == is_dynamic_atomic_type(types[i]))
       return true;
   }
@@ -131,23 +135,30 @@ static bool tuple_has_variable_sz_elem_arr(const ABI_t * types, size_t numTypes,
   while(types == NULL);
   if (false == is_tuple_type(types[idx]))
     return false;
-  size_t firstParamIdx = get_first_tuple_param_idx(types, numTypes, idx);
-  size_t numParams = get_tuple_sz(types[idx]);
-  for (size_t i = firstParamIdx; i < firstParamIdx + numParams; i++) {
+  int firstParamIdx = get_first_tuple_param_idx(types, numTypes, idx);
+  if (firstParamIdx < 0)
+    return false;
+  int numParams = get_tuple_sz(types[idx]);
+  if (numParams < 0)
+    return false;
+  for (int i = firstParamIdx; i < firstParamIdx + numParams; i++) {
     if (true == is_elementary_type_variable_sz_array(types[i]))
       return true;
   }
   return false;
 }
 
-
 static bool tuple_has_fixed_sz_elem_arr(const ABI_t * types, size_t numTypes, size_t idx) {
   while(types == NULL);
   if (false == is_tuple_type(types[idx]))
     return false;
-  size_t firstParamIdx = get_first_tuple_param_idx(types, numTypes, idx);
-  size_t numParams = get_tuple_sz(types[idx]);
-  for (size_t i = firstParamIdx; i < firstParamIdx + numParams; i++) {
+  int firstParamIdx = get_first_tuple_param_idx(types, numTypes, idx);
+  if (firstParamIdx < 0)
+    return false;
+  int numParams = get_tuple_sz(types[idx]);
+  if (numParams < 0)
+    return false;
+  for (int i = firstParamIdx; i < firstParamIdx + numParams; i++) {
     if (true == is_elementary_type_fixed_sz_array(types[i]))
       return true;
   }
@@ -183,21 +194,27 @@ static size_t elem_sz(ABI_t t) {
 
 // Decode a parameter of elementary type. Each elementary type is encoded in a single 32 byte word,
 // but may contain less data than 32 bytes (depending on the type -- see `elemSz()`).
-static size_t decode_elem_param(void * out, size_t outSz, ABI_t type, const void * in, size_t inSz, size_t off) {
+static int decode_elem_param( void * out, 
+                              size_t outSz, 
+                              ABI_t type, 
+                              const void * in, 
+                              size_t inSz, 
+                              size_t off) 
+{
   // Ensure there is space for this data in `out` and that this is an elementary type
   if ((ABI_WORD_SZ > outSz) || (true == is_dynamic_atomic_type(type)))
-    return 0;
+    return -1;
   size_t nBytes = elem_sz(type);
   const uint8_t * inPtr = in;
   if (outSz < nBytes)
-    return 0;
+    return -1;
   // Most types have data written at the end of the word. Start with this assumption. 
   size_t start = off + (ABI_WORD_SZ - nBytes);
   // Non-numerical (and non-bool) types have data written to the beginning of the word
   if (true == is_fixed_bytes_type(type))
     start = off;
   if (start + nBytes > inSz)
-    return 0;
+    return -1;
   memcpy(out, inPtr + start, nBytes);
   return nBytes;
 }
@@ -206,36 +223,36 @@ static size_t decode_elem_param(void * out, size_t outSz, ABI_t type, const void
 // specifies the size of the item, followed by `N` words worth of data. If the param
 // is not a multiple of 32 bytes, it is right-padded with zeros.
 // We only copy the data itself, i.e. we discard the right-padded zeros.
-static size_t decode_dynamic_param( void * out, 
-                                    size_t outSz, 
-                                    ABI_t type, 
-                                    const void * in, 
-                                    size_t inSz, 
-                                    size_t off) {
+static int decode_dynamic_param(  void * out, 
+                                  size_t outSz, 
+                                  ABI_t type, 
+                                  const void * in, 
+                                  size_t inSz, 
+                                  size_t off) {
   if (false == is_dynamic_atomic_type(type))
-    return 0;
+    return -1;
   const uint8_t * inPtr = in;
   if (off + ABI_WORD_SZ > inSz)
-    return 0;
+    return -1;
   size_t elemSz = get_abi_u32_be(in, off);
   off += ABI_WORD_SZ;
   if (outSz < elemSz)
-    return 0;
+    return -1;
   if (off + elemSz > inSz)
-    return 0;
+    return -1;
   memcpy(out, inPtr + off, elemSz);
   return elemSz;
 }
 
 // Decode a param given its offset. The rules for decoding depend on the type of param.
 // The offset provided (`off`) is the starting place of the param itself. 
-static size_t decode_param( void * out, 
-                            size_t outSz, 
-                            ABI_t type, 
-                            const void * in, 
-                            size_t inSz, 
-                            size_t off, 
-                            ABISelector_t info) 
+static int decode_param(  void * out, 
+                          size_t outSz, 
+                          ABI_t type, 
+                          const void * in, 
+                          size_t inSz, 
+                          size_t off, 
+                          ABISelector_t info) 
 {
   while(out == NULL || in == NULL);
   // Elementary types are fairly straight forward
@@ -243,7 +260,7 @@ static size_t decode_param( void * out,
     // Variable sized arrays require a jump to the item
     size_t numElem = get_abi_u32_be(in, off);
     if (info.arrIdx >= numElem)
-      return 0;
+      return -1;
     // Skip the numElem word and jump to the array index
     off += ABI_WORD_SZ * (1 + info.arrIdx);
     return decode_elem_param(out, outSz, type, in, inSz, off);
@@ -258,11 +275,11 @@ static size_t decode_param( void * out,
     } else {
       // Sanity check to avoid overrun
       if (off + ABI_WORD_SZ > inSz)
-        return 0;
+        return -1;
       // Another sanity check to avoid overrun
       size_t numElem = get_abi_u32_be(in, off);
       if (info.arrIdx >= numElem)
-        return 0;
+        return -1;
       // Skip past this word
       off += ABI_WORD_SZ;
       // Get the offset for this item and jump to it
@@ -321,7 +338,9 @@ static size_t get_param_offset( const ABI_t * types,
       // Tuples with fixed arrays and no dynamic params or variable arrays are
       // not represented by offsets -- they have all their params packed into the
       // header data.
-      size_t startIdx = get_first_tuple_param_idx(types, numTypes, i);
+      int startIdx = get_first_tuple_param_idx(types, numTypes, i);
+      if (startIdx < 0)
+        return -1;
       size_t numWords = 0;
       for (size_t j = startIdx; j < startIdx + get_tuple_sz(_type); j++) {
         if (true == is_elementary_type_array(types[j]) && true == is_fixed_sz_array(types[j])) {
@@ -394,7 +413,9 @@ size_t get_tuple_data_start(const ABI_t * types, size_t numTypes, ABISelector_t 
         (true == tuple_has_variable_sz_elem_arr(types, numTypes, tupleInfo.typeIdx))) {
       dataOff += get_abi_u32_be(in, dataOff + (tupleInfo.arrIdx * ABI_WORD_SZ));
     } else {
-      size_t startIdx = get_first_tuple_param_idx(types, numTypes, tupleInfo.typeIdx);
+      int startIdx = get_first_tuple_param_idx(types, numTypes, tupleInfo.typeIdx);
+      if (startIdx < 0)
+        return -1;
       size_t tupleSz = get_tuple_sz(tupleType);
       size_t tupleItemDataSz = 0;
       for (size_t i = startIdx; i < (startIdx + tupleSz); i++) {
@@ -432,9 +453,9 @@ bool is_tuple_type(ABI_t t) {
   return (t.type <= ABI_TUPLE20 && t.type >= ABI_TUPLE1);
 }
 
-size_t get_tuple_sz(ABI_t t) {
+int get_tuple_sz(ABI_t t) {
   if (false == is_tuple_type(t))
-    return 0;
+    return -1;
   return (t.type - ABI_TUPLE1) + 1; 
 }
 
@@ -454,45 +475,52 @@ bool abi_is_valid_schema(const ABI_t * types, size_t numTypes) {
   return true;
 }
 
-size_t abi_get_array_sz(const ABI_t * types, 
-                        size_t numTypes, 
-                        ABISelector_t info, 
-                        const void * in,
-                        size_t inSz)
+int abi_get_array_sz( const ABI_t * types, 
+                      size_t numTypes, 
+                      ABISelector_t info, 
+                      const void * in,
+                      size_t inSz)
 {
   while(types == NULL || in == NULL);
   ABI_t type = types[info.typeIdx];
-  if ((info.typeIdx >= numTypes) ||
-      (false == abi_is_valid_schema(types, numTypes)) ||
-      (false == is_variable_sz_array(type)) )
-    return 0;
+  if (info.typeIdx >= numTypes || false == abi_is_valid_schema(types, numTypes))
+    return -1;
+  // Fixed size arrays have size included
+  if (false == is_variable_sz_array(type))
+    return type.arraySz;
   // Get the offset of this parameter in the function definition
   size_t paramOff = get_param_offset(types, numTypes, info, in, inSz);
   if (paramOff > inSz)
-    return 0;
+    return -1;
   // The parameter at `paramOff` contains an offset where the array
   // data begins. Since the first word in a variable sized array
   // (which this must be) contains the array size, that's what we need.
   return get_abi_u32_be(in, paramOff);
 }
 
-size_t abi_get_tuple_param_array_sz(const ABI_t * types, 
-                                    size_t numTypes, 
-                                    ABISelector_t tupleInfo,
-                                    ABISelector_t paramInfo, 
-                                    const void * in,
-                                    size_t inSz)
+int abi_get_tuple_param_array_sz( const ABI_t * types, 
+                                  size_t numTypes, 
+                                  ABISelector_t tupleInfo,
+                                  ABISelector_t paramInfo, 
+                                  const void * in,
+                                  size_t inSz)
 {
   while(types == NULL || in == NULL);
-  size_t typeIdx = get_first_tuple_param_idx(types, numTypes, tupleInfo.typeIdx) + paramInfo.typeIdx;
+  int typeIdx = get_first_tuple_param_idx(types, numTypes, tupleInfo.typeIdx);
+  if (typeIdx < 0)
+    return -1;
+  typeIdx += paramInfo.typeIdx;
   ABI_t type = types[typeIdx];
-  if ((typeIdx >= numTypes) ||
-      (false == abi_is_valid_schema(types, numTypes)) ||
-      (false == is_variable_sz_array(type)) )
-    return 0;
+  if (typeIdx >= numTypes || false == abi_is_valid_schema(types, numTypes))
+    return -1;
+  // Fixed size arrays have size included
+  if (false == is_variable_sz_array(type))
+    return type.arraySz;
   // Update types pointer offset to skip non-tuple types. This allows us to treat
   // the tuple as its own sort of "nested" definition.
-  size_t firstTupleParamIdx = get_first_tuple_param_idx(types, numTypes, tupleInfo.typeIdx);
+  int firstTupleParamIdx = get_first_tuple_param_idx(types, numTypes, tupleInfo.typeIdx);
+  if (firstTupleParamIdx < 0)
+    return -1;
   const ABI_t * tupleTypes = types + firstTupleParamIdx;
   // Get the offset at which the tuple data starts
   size_t dataOff = get_tuple_data_start(types, numTypes, tupleInfo, in, inSz);
@@ -503,51 +531,54 @@ size_t abi_get_tuple_param_array_sz(const ABI_t * types,
   return get_abi_u32_be(in, paramOff);
 }
 
-size_t abi_decode_param(void * out, 
-                        size_t outSz, 
-                        const ABI_t * types, 
-                        size_t numTypes, 
-                        ABISelector_t info, 
-                        const void * in,
-                        size_t inSz) 
+int abi_decode_param( void * out, 
+                      size_t outSz, 
+                      const ABI_t * types, 
+                      size_t numTypes, 
+                      ABISelector_t info, 
+                      const void * in,
+                      size_t inSz) 
 {
   while(out == NULL || types == NULL || in == NULL);
   // Ensure we have valid types passed
   if ((info.typeIdx >= numTypes) ||
       (false == abi_is_valid_schema(types, numTypes)))
-    return 0;
+    return -1;
   size_t paramOff = get_param_offset(types, numTypes, info, in, inSz);
   if (paramOff > inSz)
-    return 0;
+    return -1;
   return decode_param(out, outSz, types[info.typeIdx], in, inSz, paramOff, info);
 }
 
-size_t abi_decode_tuple_param(void * out, 
-                              size_t outSz, 
-                              const ABI_t * types, 
-                              size_t numTypes,
-                              ABISelector_t tupleInfo,
-                              ABISelector_t paramInfo, 
-                              const void * in,
-                              size_t inSz) 
+int abi_decode_tuple_param( void * out, 
+                            size_t outSz, 
+                            const ABI_t * types, 
+                            size_t numTypes,
+                            ABISelector_t tupleInfo,
+                            ABISelector_t paramInfo, 
+                            const void * in,
+                            size_t inSz) 
 {
   while(out == NULL || types == NULL || in == NULL);
   // Ensure we have valid types passed
   if ((tupleInfo.typeIdx >= numTypes) ||
       (false == abi_is_valid_schema(types, numTypes)))
-    return 0;
+    return -1;
   ABI_t tupleType = types[tupleInfo.typeIdx];
   size_t tupleTypeSz = get_tuple_sz(tupleType);
   // Sanity check: ensure this is a tuple type
   if (false == is_tuple_type(tupleType))
-    return 0;
+    return -1;
   // Sanity check: ensure we won't overrun our buffer
   if ((paramInfo.typeIdx > tupleTypeSz) || 
       (paramInfo.typeIdx > numTypes))
-    return 0;
+    return -1;
   // Update types pointer offset to skip non-tuple types. This allows us to treat
   // the tuple as its own sort of "nested" definition.
-  const ABI_t * tupleTypes = types + get_first_tuple_param_idx(types, numTypes, tupleInfo.typeIdx);
+  int paramIdx = get_first_tuple_param_idx(types, numTypes, tupleInfo.typeIdx);
+  if (paramIdx < 0)
+    return -1;
+  const ABI_t * tupleTypes = types + paramIdx;
 
   // Get the offset at which the tuple data starts
   size_t dataOff = get_tuple_data_start(types, numTypes, tupleInfo, in, inSz);
@@ -563,17 +594,17 @@ size_t abi_decode_tuple_param(void * out,
                           inSz);
 }
 
-size_t abi_encode(void * out, 
-                  size_t outSz, 
-                  const ABI_t * types, 
-                  size_t numTypes, 
-                  size_t * offsets, 
-                  const void * in, 
-                  size_t inSz)
+int abi_encode( void * out, 
+                size_t outSz, 
+                const ABI_t * types, 
+                size_t numTypes, 
+                size_t * offsets, 
+                const void * in, 
+                size_t inSz)
 {
   while (!out || !types || !in);
   if (numTypes == 0 || outSz == 0 || inSz == 0 || (false == abi_is_valid_schema(types, numTypes)))
-    return 0;
+    return -1;
   size_t numWritten = 0;
   size_t dynamicCount = 0;
   for (size_t i = 0; i < numTypes; i++) {
@@ -582,14 +613,14 @@ size_t abi_encode(void * out,
     // TODO: Expand coverage beyond simplisitc types (if demand requires it)
     // Sanity check on the type -- make sure it is allowed
     if (is_tuple_type(types[i]) || types[i].isArray)
-      return 0;
+      return -1;
 
     // Get the size of the data
     size_t _sz = 0;
     size_t _off = offsets[i];
     if (i < numTypes - 1) {
       if (offsets[i+1] <= _off) // Ensure offsets increase monotonically
-        return 0;
+        return -1;
       _sz = offsets[i+1] - _off;
     } else {
       // Last offset can be compared against inSz
@@ -598,7 +629,7 @@ size_t abi_encode(void * out,
 
     // Avoid overrunning the buffer
     if ((ABI_WORD_SZ * i) + _sz > outSz)
-      return 0;
+      return -1;
 
     // Write the param
     if (is_dynamic_atomic_type(types[i])) {
