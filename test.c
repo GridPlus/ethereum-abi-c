@@ -856,8 +856,8 @@ static inline void test_tupleFixedArray1(uint8_t * out, size_t outSz) {
   assert(decSz == sizeof(tupleFixedArray1_p1_t1_p1));
   assert(0 == memcmp(tupleFixedArray1_p1_t1_p1, out, decSz));
 
-  // Fixed arrays should return 0 size
-  assert(0 == abi_get_array_sz(tupleFixedArray1_abi, ARRAY_SIZE(tupleFixedArray1_abi), info, in, inSz));
+  // Fixed size array
+  assert(tupleFixedArray1_abi[info.typeIdx].arraySz == abi_get_array_sz(tupleFixedArray1_abi, ARRAY_SIZE(tupleFixedArray1_abi), info, in, inSz));
 
   printf("passed.\n\r");
 }
@@ -2068,13 +2068,13 @@ static inline void test_failures(uint8_t * out, size_t outSz) {
   // We need inSz to be at least 32 bytes to allow for extracting of the first word
   assert(abi_decode_param(out, outSz, ex1_abi, ARRAY_SIZE(ex1_abi), info, in, inSz) > 0);
   assert(abi_decode_param(out, outSz, ex1_abi, ARRAY_SIZE(ex1_abi), info, in, ABI_WORD_SZ) > 0);
-  assert(abi_decode_param(out, outSz, ex1_abi, ARRAY_SIZE(ex1_abi), info, in, ABI_WORD_SZ-1) == 0);
+  assert(abi_decode_param(out, outSz, ex1_abi, ARRAY_SIZE(ex1_abi), info, in, ABI_WORD_SZ-1) == -1);
   // We need inSz to be at least 64 bytes to allow for extracting of the second word
   info.typeIdx = 1;
   assert(abi_decode_param(out, outSz, ex1_abi, ARRAY_SIZE(ex1_abi), info, in, 2*ABI_WORD_SZ) > 0);
-  assert(abi_decode_param(out, outSz, ex1_abi, ARRAY_SIZE(ex1_abi), info, in, 2*ABI_WORD_SZ-1) == 0);
+  assert(abi_decode_param(out, outSz, ex1_abi, ARRAY_SIZE(ex1_abi), info, in, 2*ABI_WORD_SZ-1) == -1);
   assert(abi_decode_param(out, outSz, ex1_abi, ARRAY_SIZE(ex1_abi), info, in, inSz) > 0);
-  assert(abi_decode_param(out, outSz, ex1_abi, ARRAY_SIZE(ex1_abi), info, in, inSz-1) == 0);
+  assert(abi_decode_param(out, outSz, ex1_abi, ARRAY_SIZE(ex1_abi), info, in, inSz-1) == -1);
   memset(out, 0, outSz);
   // Make sure we cannot specify an index out of range of a fixed size array
   in = ex5_encoded+4;
@@ -2083,7 +2083,7 @@ static inline void test_failures(uint8_t * out, size_t outSz) {
   info.arrIdx = 2;
   assert(abi_decode_param(out, outSz, ex5_abi, ARRAY_SIZE(ex5_abi), info, in, inSz) > 0);
   info.arrIdx = 3;
-  assert(abi_decode_param(out, outSz, ex5_abi, ARRAY_SIZE(ex5_abi), info, in, inSz) == 0);
+  assert(abi_decode_param(out, outSz, ex5_abi, ARRAY_SIZE(ex5_abi), info, in, inSz) == -1);
   printf("passed.\n\r");
 }
 
