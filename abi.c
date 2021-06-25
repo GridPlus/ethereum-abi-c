@@ -174,8 +174,10 @@ static size_t elem_sz(ABI_t t) {
   // Numerical types (excluding 256-bit numbers)
   if (t.type >= ABI_UINT8 && t.type < ABI_UINT256)
     return 32 - (ABI_UINT256 - t.type);
+  // Signed integers are encoded as (UINT256_MAX - val), so we need to always
+  // return 32 bytes of data regardless of the underlying int type size
   if (t.type >= ABI_INT8 && t.type < ABI_INT256)
-    return 32 - (ABI_INT256 - t.type);
+    return 32;
   // Other types
   switch (t.type) {
     case ABI_ADDRESS:
