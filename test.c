@@ -420,6 +420,29 @@ static inline void test_ex13(uint8_t * out, size_t outSz) {
   printf("passed.\n\r");
 }
 
+static inline void test_ex14(uint8_t * out, size_t outSz) {
+  ABISelector_t info = { .typeIdx = 0 };
+  uint8_t * in = ex14_encoded;
+  size_t inSz = sizeof(ex14_encoded);
+  printf("Example 14...");
+  assert(abi_decode_param(out, outSz, ex14_abi, ARRAY_SIZE(ex14_abi), info, in, inSz) == sizeof(ex14_param_0));
+  assert(0 == memcmp(ex14_param_0, out, sizeof(ex14_param_0)));
+  memset(out, 0, outSz);
+  info.typeIdx = 1;
+  assert(abi_decode_param(out, outSz, ex14_abi, ARRAY_SIZE(ex14_abi), info, in, inSz) == sizeof(ex14_param_1));
+  assert(0 == memcmp(ex14_param_1, out, sizeof(ex14_param_1)));
+  memset(out, 0, outSz);
+  info.typeIdx = 2;
+  assert(abi_decode_param(out, outSz, ex14_abi, ARRAY_SIZE(ex14_abi), info, in, inSz) == sizeof(ex14_param_2));
+  assert(0 == memcmp(ex14_param_2, out, sizeof(ex14_param_2)));
+  memset(out, 0, outSz);
+  info.typeIdx = 3;
+  assert(abi_decode_param(out, outSz, ex14_abi, ARRAY_SIZE(ex14_abi), info, in, inSz) == sizeof(ex14_param_3));
+  assert(0 == memcmp(ex14_param_3, out, sizeof(ex14_param_3)));
+  memset(out, 0, outSz);
+  printf("passed.\n\r");
+}
+
 static inline void test_fillOrder(uint8_t * out, size_t outSz) {
   ABISelector_t info = { .typeIdx = 0 };
   uint8_t * in = fillOrder_encoded+4;
@@ -2105,6 +2128,7 @@ int main() {
   test_ex11(out, sizeof(out));
   test_ex12(out, sizeof(out));
   test_ex13(out, sizeof(out));
+  test_ex14(out, sizeof(out));
   test_fillOrder(out, sizeof(out));
   test_marketSellOrders(out, sizeof(out));
   test_tupleElementary(out, sizeof(out));
